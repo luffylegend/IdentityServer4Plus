@@ -1,0 +1,1 @@
+start ./src/IdentityServer4Plus/IdentityServer4Plus.sln
