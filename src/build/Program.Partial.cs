@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using static Bullseye.Targets;
@@ -8,9 +8,9 @@ namespace build
 {
     partial class Program
     {
-        private const string packOutput = "./artifacts";
-        private const string packOutputCopy = "../../nuget";
-        private const string envVarMissing = " environment variable is missing. Aborting.";
+        private const string PACKOUTPUT = "./artifacts";
+        private const string PACKOUTPUTCOPY = "../../nuget";
+        private const string ENVVARMISSING = " environment variable is missing. Aborting.";
 
         private static class Targets
         {
@@ -48,31 +48,31 @@ namespace build
 
             Target(Targets.CleanPackOutput, () =>
             {
-                if (Directory.Exists(packOutput))
+                if (Directory.Exists(PACKOUTPUT))
                 {
-                    Directory.Delete(packOutput, true);
+                    Directory.Delete(PACKOUTPUT, true);
                 }
             });
 
             Target(Targets.Pack, DependsOn(Targets.Build, Targets.CleanPackOutput), () =>
             {
                 var project = Directory.GetFiles("./src", "*.csproj", SearchOption.TopDirectoryOnly).OrderBy(_ => _).First();
-
-                Run("dotnet", $"pack {project} -c Release -o \"{Directory.CreateDirectory(packOutput).FullName}\" --no-build --nologo", echoPrefix: Prefix);
+                
+                Run("dotnet", $"pack {project} -c Release -o \"{Directory.CreateDirectory(PACKOUTPUT).FullName}\" --no-build --nologo", echoPrefix: Prefix);
             });
 
             Target(Targets.SignPackage, DependsOn(Targets.Pack), () =>
             {
-                Sign(packOutput, "*.nupkg");
+                Sign(PACKOUTPUT, "*.nupkg");
             });
 
             Target(Targets.CopyPackOutput, DependsOn(Targets.Pack), () =>
             {
-                Directory.CreateDirectory(packOutputCopy);
+                Directory.CreateDirectory(PACKOUTPUTCOPY);
 
-                foreach (var file in Directory.GetFiles(packOutput))
+                foreach (var file in Directory.GetFiles(PACKOUTPUT))
                 {
-                    File.Copy(file, Path.Combine(packOutputCopy, Path.GetFileName(file)), true);
+                    File.Copy(file, Path.Combine(PACKOUTPUTCOPY, Path.GetFileName(file)), true);
                 }
             });
 
@@ -82,7 +82,7 @@ namespace build
 
             Target("sign", DependsOn(Targets.SignBinary, Targets.Test, Targets.SignPackage, Targets.CopyPackOutput));
 
-            RunTargetsAndExit(args, ex => ex is SimpleExec.NonZeroExitCodeException || ex.Message.EndsWith(envVarMissing), Prefix);
+            RunTargetsAndExitAsync(args, ex => ex is SimpleExec.ExitCodeReadException || ex.Message.EndsWith(ENVVARMISSING), () => Prefix);
         }
 
         private static void Sign(string path, string searchTerm)
@@ -91,7 +91,7 @@ namespace build
 
             if (string.IsNullOrWhiteSpace(signClientSecret))
             {
-                throw new Exception($"SignClientSecret{envVarMissing}");
+                throw new Exception($"SignClientSecret{ENVVARMISSING}");
             }
 
             foreach (var file in Directory.GetFiles(path, searchTerm, SearchOption.AllDirectories))

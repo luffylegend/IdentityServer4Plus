@@ -33,7 +33,7 @@ See [here](http://docs.identityserver.io/en/aspnetcore1/) for the 1.x docs, and 
 Please use the [issue tracker](https://github.com/luffylegend/IdentityServer4Plus/issues) for that. We only support the latest version for free. For older versions, you can get a commercial support agreement with me.
 
 ## Acknowledgements
-IdentityServer4 is built using the following great open source projects and free services:
+IdentityServer4Plus is built using the following great open source projects and free services:
 
 * [IdentityServer4](https://github.com/identityserver/IdentityServer4)
 * [ASP.NET Core](https://github.com/dotnet/aspnetcore)
