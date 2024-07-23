@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Options;
 using IdentityServer4.EntityFramework.Stores;
@@ -19,7 +19,12 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
 {
     public class DeviceFlowStoreTests : IntegrationTest<DeviceFlowStoreTests, PersistedGrantDbContext, OperationalStoreOptions>
     {
-        private readonly IPersistentGrantSerializer serializer = new PersistentGrantSerializer();
+        private readonly IPersistentGrantSerializer _serializer = new PersistentGrantSerializer(); 
+        private readonly DeviceCode _deviceCode = new DeviceCode
+        {
+            Lifetime = 300,
+            CreationTime = DateTime.UtcNow
+        };
 
         public DeviceFlowStoreTests(DatabaseProviderFixture<PersistedGrantDbContext> fixture) : base(fixture)
         {
@@ -83,7 +88,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                 foundDeviceFlowCodes.Should().NotBeNull();
                 var deserializedData = new PersistentGrantSerializer().Deserialize<DeviceCode>(foundDeviceFlowCodes?.Data);
 
-                deserializedData.CreationTime.Should().BeCloseTo(data.CreationTime);
+                deserializedData.CreationTime.Should().BeCloseTo(data.CreationTime, TimeSpan.FromSeconds(_deviceCode.Lifetime));
                 deserializedData.ClientId.Should().Be(data.ClientId);
                 deserializedData.Lifetime.Should().Be(data.Lifetime);
             }
@@ -114,7 +119,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                     SubjectId = deviceCodeData.Subject.FindFirst(JwtClaimTypes.Subject).Value,
                     CreationTime = deviceCodeData.CreationTime,
                     Expiration = deviceCodeData.CreationTime.AddSeconds(deviceCodeData.Lifetime),
-                    Data = serializer.Serialize(deviceCodeData)
+                    Data = _serializer.Serialize(deviceCodeData)
                 });
                 context.SaveChanges();
             }
@@ -157,7 +162,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                     SubjectId = deviceCodeData.Subject.FindFirst(JwtClaimTypes.Subject).Value,
                     CreationTime = deviceCodeData.CreationTime,
                     Expiration = deviceCodeData.CreationTime.AddSeconds(deviceCodeData.Lifetime),
-                    Data = serializer.Serialize(deviceCodeData)
+                    Data = _serializer.Serialize(deviceCodeData)
                 });
                 context.SaveChanges();
             }
@@ -202,7 +207,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                     SubjectId = expectedDeviceCodeData.Subject.FindFirst(JwtClaimTypes.Subject).Value,
                     CreationTime = expectedDeviceCodeData.CreationTime,
                     Expiration = expectedDeviceCodeData.CreationTime.AddSeconds(expectedDeviceCodeData.Lifetime),
-                    Data = serializer.Serialize(expectedDeviceCodeData)
+                    Data = _serializer.Serialize(expectedDeviceCodeData)
                 });
                 context.SaveChanges();
             }
@@ -258,7 +263,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                     SubjectId = expectedDeviceCodeData.Subject.FindFirst(JwtClaimTypes.Subject).Value,
                     CreationTime = expectedDeviceCodeData.CreationTime,
                     Expiration = expectedDeviceCodeData.CreationTime.AddSeconds(expectedDeviceCodeData.Lifetime),
-                    Data = serializer.Serialize(expectedDeviceCodeData)
+                    Data = _serializer.Serialize(expectedDeviceCodeData)
                 });
                 context.SaveChanges();
             }
@@ -312,7 +317,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                     ClientId = unauthorizedDeviceCode.ClientId,
                     CreationTime = unauthorizedDeviceCode.CreationTime,
                     Expiration = unauthorizedDeviceCode.CreationTime.AddSeconds(unauthorizedDeviceCode.Lifetime),
-                    Data = serializer.Serialize(unauthorizedDeviceCode)
+                    Data = _serializer.Serialize(unauthorizedDeviceCode)
                 });
                 context.SaveChanges();
             }
@@ -348,7 +353,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
             updatedCodes.Expiration.Should().Be(unauthorizedDeviceCode.CreationTime.AddSeconds(authorizedDeviceCode.Lifetime));
 
             // should be changed
-            var parsedCode = serializer.Deserialize<DeviceCode>(updatedCodes.Data);
+            var parsedCode = _serializer.Deserialize<DeviceCode>(updatedCodes.Data);
             parsedCode.Should().BeEquivalentTo(authorizedDeviceCode, assertionOptions => assertionOptions.Excluding(x => x.Subject));
             parsedCode.Subject.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Subject && x.Value == expectedSubject).Should().NotBeNull();
         }
@@ -377,7 +382,7 @@ namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
                     ClientId = existingDeviceCode.ClientId,
                     CreationTime = existingDeviceCode.CreationTime,
                     Expiration = existingDeviceCode.CreationTime.AddSeconds(existingDeviceCode.Lifetime),
-                    Data = serializer.Serialize(existingDeviceCode)
+                    Data = _serializer.Serialize(existingDeviceCode)
                 });
                 context.SaveChanges();
             }

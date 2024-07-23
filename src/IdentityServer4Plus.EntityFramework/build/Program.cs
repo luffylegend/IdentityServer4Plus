@@ -1,7 +1,7 @@
-﻿namespace build
+namespace build
 {
     partial class Program
     {
-        private const string Prefix = "EntityFramework";
+        private const string Prefix = "IdentityServer4Plus.EntityFramework";
     }
 }
