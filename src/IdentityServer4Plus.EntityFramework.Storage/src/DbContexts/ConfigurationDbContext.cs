@@ -1,4 +1,4 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
@@ -38,7 +38,7 @@ namespace IdentityServer4.EntityFramework.DbContexts
     public class ConfigurationDbContext<TContext> : DbContext, IConfigurationDbContext
         where TContext : DbContext, IConfigurationDbContext
     {
-        private readonly ConfigurationStoreOptions storeOptions;
+        private readonly ConfigurationStoreOptions _storeOptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfigurationDbContext"/> class.
@@ -49,7 +49,7 @@ namespace IdentityServer4.EntityFramework.DbContexts
         public ConfigurationDbContext(DbContextOptions<TContext> options, ConfigurationStoreOptions storeOptions)
             : base(options)
         {
-            this.storeOptions = storeOptions ?? throw new ArgumentNullException(nameof(storeOptions));
+            this._storeOptions = storeOptions ?? throw new ArgumentNullException(nameof(storeOptions));
         }
 
         /// <summary>
@@ -106,8 +106,8 @@ namespace IdentityServer4.EntityFramework.DbContexts
         /// </remarks>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ConfigureClientContext(storeOptions);
-            modelBuilder.ConfigureResourcesContext(storeOptions);
+            modelBuilder.ConfigureClientContext(_storeOptions);
+            modelBuilder.ConfigureResourcesContext(_storeOptions);
 
             base.OnModelCreating(modelBuilder);
         }

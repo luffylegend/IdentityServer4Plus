@@ -1,11 +1,11 @@
 <Project>
 
   <PropertyGroup>
-    <FrameworkVersion>8.0.7</FrameworkVersion>
-    <ExtensionsVersion>8.0.7</ExtensionsVersion>
-    <EntityFrameworkVersion>8.0.7</EntityFrameworkVersion>
+    <FrameworkVersion>8.0.8</FrameworkVersion>
+    <ExtensionsVersion>8.0.8</ExtensionsVersion>
+    <EntityFrameworkVersion>8.0.8</EntityFrameworkVersion>
     
-    <IdentityServerVersion>8.0.7</IdentityServerVersion>
+    <IdentityServerVersion>8.0.7-*</IdentityServerVersion>
   </PropertyGroup>
 
   <ItemGroup>
