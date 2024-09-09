@@ -1,4 +1,4 @@
-﻿using IdentityServer4.Configuration;
+using IdentityServer4.Configuration;
 using IdentityServer4.Extensions;
 using IdentityServer4.Hosting;
 using Xunit;

@@ -1,4 +1,4 @@
-﻿using IdentityServer4.Services;
+using IdentityServer4.Services;
 using IdentityServer4.Validation;
 using System.Collections.Generic;
 using System.Linq;

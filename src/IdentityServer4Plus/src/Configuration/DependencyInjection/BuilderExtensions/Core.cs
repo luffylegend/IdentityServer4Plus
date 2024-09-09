@@ -7,25 +7,25 @@ using IdentityServer4.Configuration;
 using IdentityServer4.Configuration.DependencyInjection;
 using IdentityServer4.Endpoints;
 using IdentityServer4.Events;
+using IdentityServer4.Extensions;
 using IdentityServer4.Hosting;
+using IdentityServer4.Hosting.FederatedSignOut;
+using IdentityServer4.Models;
 using IdentityServer4.ResponseHandling;
 using IdentityServer4.Services;
+using IdentityServer4.Services.Default;
 using IdentityServer4.Stores;
 using IdentityServer4.Stores.Serialization;
 using IdentityServer4.Validation;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using System;
 using System.Linq;
-using IdentityServer4.Models;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
 using static IdentityServer4.Constants;
-using IdentityServer4.Extensions;
-using IdentityServer4.Hosting.FederatedSignOut;
-using IdentityServer4.Services.Default;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

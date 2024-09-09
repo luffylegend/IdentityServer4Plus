@@ -2,12 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using IdentityServer.UnitTests.Validation.Setup;
 using Microsoft.AspNetCore.Http;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace IdentityServer.UnitTests.Validation.Secrets

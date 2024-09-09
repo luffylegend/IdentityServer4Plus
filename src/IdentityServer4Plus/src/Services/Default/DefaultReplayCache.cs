@@ -1,6 +1,6 @@
+using Microsoft.Extensions.Caching.Distributed;
 using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Distributed;
 
 namespace IdentityServer4.Services
 {

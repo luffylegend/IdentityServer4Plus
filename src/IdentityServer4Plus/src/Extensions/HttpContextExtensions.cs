@@ -3,15 +3,15 @@
 
 
 using IdentityServer4.Configuration;
+using IdentityServer4.Models;
 using IdentityServer4.Services;
+using IdentityServer4.Stores;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Threading.Tasks;
-using IdentityServer4.Models;
-using IdentityServer4.Stores;
 using System.Linq;
-using Microsoft.AspNetCore.Authentication;
+using System.Threading.Tasks;
 
 #pragma warning disable 1591
 

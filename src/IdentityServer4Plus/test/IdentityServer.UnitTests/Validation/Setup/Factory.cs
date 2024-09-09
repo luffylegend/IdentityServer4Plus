@@ -2,10 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using IdentityServer.UnitTests.Common;
 using IdentityServer4.Configuration;
 using IdentityServer4.Models;
@@ -14,8 +10,11 @@ using IdentityServer4.Services.Default;
 using IdentityServer4.Stores;
 using IdentityServer4.Stores.Serialization;
 using IdentityServer4.Validation;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 
 namespace IdentityServer.UnitTests.Validation.Setup
 {
@@ -145,7 +144,7 @@ namespace IdentityServer.UnitTests.Validation.Setup
         {
             return new DefaultTokenCreationService(
                 new StubClock(),
-                new DefaultKeyMaterialService(new IValidationKeysStore[] { },
+                new DefaultKeyMaterialService(Array.Empty<IValidationKeysStore>(),
                     new ISigningCredentialStore[] { new InMemorySigningCredentialsStore(TestCert.LoadSigningCredentials()) }),
                 options ?? TestIdentityServerOptions.Create(),
                 TestLogger.Create<DefaultTokenCreationService>());

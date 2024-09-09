@@ -9,7 +9,7 @@ namespace IdentityServerHost.Configuration
 {
     public static class ClientsWeb
     {
-        static string[] allowedScopes = 
+        static string[] _allowedScopes = 
         {
             IdentityServerConstants.StandardScopes.OpenId,
             IdentityServerConstants.StandardScopes.Profile,
@@ -46,7 +46,7 @@ namespace IdentityServerHost.Configuration
                     PostLogoutRedirectUris = { "https://localhost:44300/index.html" },
                     AllowedCorsOrigins = { "https://localhost:44300" },
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 },
                 
                 ///////////////////////////////////////////
@@ -72,7 +72,7 @@ namespace IdentityServerHost.Configuration
 
                     AllowOfflineAccess = true,
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 },
                 
                 ///////////////////////////////////////////
@@ -98,7 +98,7 @@ namespace IdentityServerHost.Configuration
 
                     AllowOfflineAccess = true,
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 },
                 
                 ///////////////////////////////////////////
@@ -124,7 +124,7 @@ namespace IdentityServerHost.Configuration
 
                     AllowOfflineAccess = true,
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 }
             };
         }

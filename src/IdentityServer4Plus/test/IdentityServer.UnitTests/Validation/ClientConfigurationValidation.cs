@@ -3,12 +3,12 @@
 
 
 using FluentAssertions;
+using IdentityServer.UnitTests.Validation.Setup;
 using IdentityServer4.Configuration;
 using IdentityServer4.Models;
 using IdentityServer4.Validation;
 using System;
 using System.Threading.Tasks;
-using IdentityServer.UnitTests.Validation.Setup;
 using Xunit;
 
 namespace IdentityServer.UnitTests.Validation

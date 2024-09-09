@@ -1,8 +1,8 @@
+using IdentityModel;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
-using IdentityModel;
 
 namespace IdentityServer4.Extensions
 {

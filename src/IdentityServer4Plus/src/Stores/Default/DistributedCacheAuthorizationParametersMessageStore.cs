@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 using IdentityModel;
 using IdentityServer4.Models;
 using IdentityServer4.Services;
 using Microsoft.Extensions.Caching.Distributed;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace IdentityServer4.Stores.Default
 {

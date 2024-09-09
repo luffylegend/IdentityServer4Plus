@@ -1,4 +1,4 @@
-﻿using IdentityServer4.Models;
+using IdentityServer4.Models;
 using IdentityServer4.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;

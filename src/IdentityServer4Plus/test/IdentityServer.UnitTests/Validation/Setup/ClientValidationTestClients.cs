@@ -2,12 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
 using IdentityServer.UnitTests.Common;
 using IdentityServer4;
 using IdentityServer4.Models;
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
 using static IdentityServer4.IdentityServerConstants;
 
 namespace IdentityServer.UnitTests.Validation.Setup
