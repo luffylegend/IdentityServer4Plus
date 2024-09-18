@@ -1,18 +1,18 @@
 using FluentAssertions;
+using IdentityModel;
 using IdentityServer4.EntityFramework.DbContexts;
+using IdentityServer4.EntityFramework.Entities;
 using IdentityServer4.EntityFramework.Options;
 using IdentityServer4.EntityFramework.Stores;
 using IdentityServer4.Models;
 using IdentityServer4.Stores.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using IdentityModel;
-using IdentityServer4.EntityFramework.Entities;
-using Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal;
 using Xunit;
 
 namespace IdentityServer4.EntityFramework.IntegrationTests.Stores
