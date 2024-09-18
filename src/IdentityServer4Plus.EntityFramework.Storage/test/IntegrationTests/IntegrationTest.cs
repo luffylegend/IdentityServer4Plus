@@ -1,8 +1,8 @@
-﻿using System;
-using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace IdentityServer4.EntityFramework.IntegrationTests

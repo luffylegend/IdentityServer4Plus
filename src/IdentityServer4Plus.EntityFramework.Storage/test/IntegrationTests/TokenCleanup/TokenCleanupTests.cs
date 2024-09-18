@@ -1,7 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Entities;
@@ -12,6 +8,10 @@ using IdentityServer4.Stores;
 using IdentityServer4.Test;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace IdentityServer4.EntityFramework.IntegrationTests.TokenCleanup
