@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - master
+    - development
     - features/**
     tags:
     - '*.*.*'
@@ -24,7 +25,13 @@ jobs:
     - uses: actions/checkout@af513c7a016048ae468971c52ed77d9562c7c819
     - run: dotnet --info
     - name: Ensure build.sh is executable
-      run: chmod +x ./build.sh ./src/IdentityServer4Plus.Storage/build.sh ./src/IdentityServer4Plus/build.sh ./src/IdentityServer4Plus.EntityFramework.Storage/build.sh ./src/IdentityServer4Plus.EntityFramework/build.sh ./src/IdentityServer4Plus.AspNetIdentity/build.sh
+      run: |
+        chmod +x "./build.sh"
+        chmod +x "./src/IdentityServer4Plus.Storage/build.sh"
+        chmod +x "./src/IdentityServer4Plus/build.sh"
+        chmod +x "./src/IdentityServer4Plus.EntityFramework.Storage/build.sh"
+        chmod +x "./src/IdentityServer4Plus.EntityFramework/build.sh"
+        chmod +x "./src/IdentityServer4Plus.AspNetIdentity/build.sh"
     - if: contains(matrix.runs-on, 'macOS') || contains(matrix.runs-on, 'ubuntu')
       run: ./build.sh
     - if: matrix.runs-on == 'windows-latest' && github.ref != 'refs/heads/master' && !contains(github.ref, 'refs/tags/')
