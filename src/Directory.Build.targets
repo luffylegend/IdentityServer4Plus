@@ -1,11 +1,11 @@
 <Project>
 
     <PropertyGroup>
-        <FrameworkVersion>8.0.8</FrameworkVersion>
-        <ExtensionsVersion>8.0.8</ExtensionsVersion>
-        <EntityFrameworkVersion>8.0.8</EntityFrameworkVersion>
+        <FrameworkVersion>8.0.10</FrameworkVersion>
+        <ExtensionsVersion>8.0.10</ExtensionsVersion>
+        <EntityFrameworkVersion>8.0.10</EntityFrameworkVersion>
 
-        <IdentityServerVersion>8.0.8-*</IdentityServerVersion>
+        <IdentityServerVersion>8.0.10-*</IdentityServerVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,7 +18,7 @@
         <!--tests -->
         <PackageReference Update="FluentAssertions" Version="6.12.1" />
         <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-        <PackageReference Update="xunit" Version="2.9.0" />
+        <PackageReference Update="xunit" Version="2.9.2" />
         <PackageReference Update="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="All" />
 
         <!--our stuff -->
