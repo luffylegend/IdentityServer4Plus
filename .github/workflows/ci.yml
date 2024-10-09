@@ -41,4 +41,4 @@ jobs:
         SignClientSecret: ${{ secrets.SIGNCLIENT }}
       run: |
         ./build.ps1 sign
-        # dotnet nuget push .\nuget\*.nupkg -s https://www.myget.org/F/identity/api/v2/package -k ${{ secrets.MYGET }}
+        dotnet nuget push .\nuget\*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
