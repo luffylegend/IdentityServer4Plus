@@ -52,7 +52,7 @@ namespace build
 
             Target(Targets.Test, DependsOn(Targets.Build), () =>
             {
-                // Run("dotnet", $"test {solution} -c Release --no-build --nologo");
+                Run("dotnet", $"test {solution} -c Release --no-build --nologo");
             });
 
             Target(Targets.CleanPackOutput, () =>
