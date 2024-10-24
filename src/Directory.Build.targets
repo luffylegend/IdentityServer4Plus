@@ -4,6 +4,7 @@
         <FrameworkVersion>8.0.10</FrameworkVersion>
         <ExtensionsVersion>8.0.10</ExtensionsVersion>
         <EntityFrameworkVersion>8.0.10</EntityFrameworkVersion>
+        <WilsonVersion>8.1.2</WilsonVersion>
 
         <IdentityServerVersion>8.0.10-*</IdentityServerVersion>
     </PropertyGroup>
@@ -18,8 +19,12 @@
         <!--tests -->
         <PackageReference Update="FluentAssertions" Version="6.12.1" />
         <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-        <PackageReference Update="xunit" Version="2.9.2" />
+        <!--Since version v2.9.1, xunit no longer supports the SelectMany method.-->
+        <PackageReference Update="xunit" Version="2.9.0" />
         <PackageReference Update="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="All" />
+
+        <!-- testing -->
+        <PackageReference Update="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(FrameworkVersion)" />
 
         <!--our stuff -->
         <PackageReference Update="IdentityModel" Version="7.0.0" />
@@ -40,10 +45,11 @@
 
         <!--misc -->
         <PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Update="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="[8.0.0, 9.0.0)" />
-        <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="[8.0.0, 9.0.0)" />
+        <PackageReference Update="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="$(WilsonVersion)" />
+        <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
         <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
         <PackageReference Update="AutoMapper" Version="[13.0.1,14.0)" />
+        <PackageReference Update="Serilog.AspNetCore" Version="8.0.3"/>
 
         <!--microsoft asp.net core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(FrameworkVersion)" />

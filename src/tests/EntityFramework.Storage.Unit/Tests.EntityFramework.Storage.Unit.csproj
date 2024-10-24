@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+
+    <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <ProjectReference Include="..\..\main\EntityFramework.Storage\IdentityServer4Plus.EntityFramework.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -22,23 +22,31 @@ jobs:
     name: ${{ matrix.runs-on }}
     runs-on: ${{ matrix.runs-on }}
     steps:
-    - uses: actions/checkout@af513c7a016048ae468971c52ed77d9562c7c819
+    - uses: actions/checkout@3
+      with:
+        fetch-depth: 0
+
+    - name: Setup dotnet (main)
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+            8.0.x
+
     - run: dotnet --info
+  
     - name: Ensure build.sh is executable
       run: |
+        chmod +x "./build.cmd"
+        chmod +x "./build.ps1"
         chmod +x "./build.sh"
-        chmod +x "./src/IdentityServer4Plus.Storage/build.sh"
-        chmod +x "./src/IdentityServer4Plus/build.sh"
-        chmod +x "./src/IdentityServer4Plus.EntityFramework.Storage/build.sh"
-        chmod +x "./src/IdentityServer4Plus.EntityFramework/build.sh"
-        chmod +x "./src/IdentityServer4Plus.AspNetIdentity/build.sh"
+
     - if: contains(matrix.runs-on, 'macOS') || contains(matrix.runs-on, 'ubuntu')
       run: ./build.sh
     - if: matrix.runs-on == 'windows-latest' && github.ref != 'refs/heads/master' && !contains(github.ref, 'refs/tags/')
       run: ./build.ps1
     - if: (matrix.runs-on == 'windows-latest') && (github.ref == 'refs/heads/master' || contains(github.ref, 'refs/tags/'))
-      env:
-        SignClientSecret: ${{ secrets.SIGNCLIENT }}
+      # env:
+      #   SignClientSecret: ${{ secrets.SIGNCLIENT }}
       run: |
         ./build.ps1 sign
-        dotnet nuget push .\nuget\*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget push .\artifacts\*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json

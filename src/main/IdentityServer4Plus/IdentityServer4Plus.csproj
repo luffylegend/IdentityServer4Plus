@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <PackageId>IdentityServer4Plus</PackageId>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <Description>OpenID Connect and OAuth 2.0 Framework for ASP.NET Core
+(A continuation solution for the no longer maintaining project `identity server 4`)</Description>
+    <AssemblyName>IdentityServer4Plus</AssemblyName>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- strong naming fml -->
+    <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IdentityServer4Plus.Storage" />
+    <PackageReference Include="IdentityModel" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Update="MinVer" />
+  </ItemGroup>
+
+</Project>
