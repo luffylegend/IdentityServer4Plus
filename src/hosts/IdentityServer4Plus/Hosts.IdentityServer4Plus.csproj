@@ -7,9 +7,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="All" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="System.Security.Principal.Windows" />
       
     <ProjectReference Include="..\..\main\IdentityServer4Plus\IdentityServer4Plus.csproj" />

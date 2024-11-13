@@ -1,12 +1,12 @@
 <Project>
 
     <PropertyGroup>
-        <FrameworkVersion>8.0.10</FrameworkVersion>
-        <ExtensionsVersion>8.0.10</ExtensionsVersion>
-        <EntityFrameworkVersion>8.0.10</EntityFrameworkVersion>
-        <WilsonVersion>8.1.2</WilsonVersion>
+        <FrameworkVersion>8.0.11</FrameworkVersion>
+        <ExtensionsVersion>8.0.11</ExtensionsVersion>
+        <EntityFrameworkVersion>8.0.11</EntityFrameworkVersion>
+        <WilsonVersion>8.2.0</WilsonVersion>
 
-        <IdentityServerVersion>8.0.10-*</IdentityServerVersion>
+        <IdentityServerVersion>8.0.11-*</IdentityServerVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,7 +17,7 @@
         <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 
         <!--tests -->
-        <PackageReference Update="FluentAssertions" Version="6.12.1" />
+        <PackageReference Update="FluentAssertions" Version="6.12.2" />
         <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.11.1" />
         <!--Since version v2.9.1, xunit no longer supports the SelectMany method.-->
         <PackageReference Update="xunit" Version="2.9.0" />
@@ -49,7 +49,10 @@
         <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
         <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
         <PackageReference Update="AutoMapper" Version="[13.0.1,14.0)" />
+        <PackageReference Update="Serilog" Version="4.1.0" />
         <PackageReference Update="Serilog.AspNetCore" Version="8.0.3"/>
+        <PackageReference Update="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Update="Serilog.Sinks.File" Version="6.0.0" />
 
         <!--microsoft asp.net core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(FrameworkVersion)" />
