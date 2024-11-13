@@ -12,15 +12,10 @@
         <PackageProjectUrl>https://github.com/luffylegend/IdentityServer4plus</PackageProjectUrl>
         <PackageReleaseNotes>https://github.com/luffylegend/IdentityServer4plus/releases</PackageReleaseNotes>
         <Copyright>$(Authors)</Copyright>
-        
+
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <DebugType Condition="'$(GITHUB_ACTIONS)' == 'true'">embedded</DebugType>
-        
-        <!-- strong naming fml -->
-        <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
-        <SignAssembly>true</SignAssembly>
-        <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
     </PropertyGroup>
 
     <PropertyGroup>

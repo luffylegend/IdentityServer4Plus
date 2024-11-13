@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using IdentityModel;
 using IdentityServer4.Extensions;
 using IdentityServer4.Hosting;
 using IdentityServer4.ResponseHandling;
@@ -11,42 +12,62 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// Models a token error result
+/// </summary>
+public class TokenErrorResult : EndpointResult<TokenErrorResult>
 {
-    internal class TokenErrorResult : IEndpointResult
+    /// <summary>
+    /// The response
+    /// </summary>
+    public TokenErrorResponse Response { get; }
+
+    /// <summary>
+    /// Ctor
+    /// </summary>
+    /// <param name="error"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public TokenErrorResult(TokenErrorResponse error)
     {
-        public TokenErrorResponse Response { get; }
+        if (error.Error.IsMissing()) throw new ArgumentNullException(nameof(error.Error), "Error must be set");
 
-        public TokenErrorResult(TokenErrorResponse error)
+        Response = error;
+    }
+}
+
+internal class TokenErrorHttpWriter : IHttpResponseWriter<TokenErrorResult>
+{
+    public async Task WriteHttpResponse(TokenErrorResult result, HttpContext context)
+    {
+        context.Response.StatusCode = 400;
+        context.Response.SetNoCache();
+
+        if (result.Response.DPoPNonce.IsPresent())
         {
-            if (error.Error.IsMissing()) throw new ArgumentNullException(nameof(error.Error), "Error must be set");
-
-            Response = error;
+            context.Response.Headers[OidcConstants.HttpHeaders.DPoPNonce] = result.Response.DPoPNonce;
         }
 
-        public async Task ExecuteAsync(HttpContext context)
+        var dto = new ResultDto
         {
-            context.Response.StatusCode = 400;
-            context.Response.SetNoCache();
+            error = result.Response.Error,
+            error_description = result.Response.ErrorDescription,
 
-            var dto = new ResultDto
-            {
-                error = Response.Error,
-                error_description = Response.ErrorDescription,
-                
-                custom = Response.Custom
-            };
+            custom = result.Response.Custom
+        };
 
-            await context.Response.WriteJsonAsync(dto);
-        }
+        await context.Response.WriteJsonAsync(dto);
+    }
 
-        internal class ResultDto
-        {
-            public string error { get; set; }
-            public string error_description { get; set; }
+    internal class ResultDto
+    {
+#pragma warning disable IDE1006 // Naming Styles
+        public string error { get; set; }
+        public string error_description { get; set; }
 
-            [JsonExtensionData]
-            public Dictionary<string, object> custom { get; set; }
-        }    
+        [JsonExtensionData]
+        public Dictionary<string, object> custom { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
     }
 }

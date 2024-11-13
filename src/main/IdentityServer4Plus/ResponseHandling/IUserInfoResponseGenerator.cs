@@ -6,18 +6,17 @@ using IdentityServer4.Validation;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.ResponseHandling
+namespace IdentityServer4.ResponseHandling;
+
+/// <summary>
+/// Interface for the userinfo response generator
+/// </summary>
+public interface IUserInfoResponseGenerator
 {
     /// <summary>
-    /// Interface for the userinfo response generator
+    /// Creates the response.
     /// </summary>
-    public interface IUserInfoResponseGenerator
-    {
-        /// <summary>
-        /// Creates the response.
-        /// </summary>
-        /// <param name="validationResult">The userinfo request validation result.</param>
-        /// <returns></returns>
-        Task<Dictionary<string, object>> ProcessAsync(UserInfoRequestValidationResult validationResult);
-    }
+    /// <param name="validationResult">The userinfo request validation result.</param>
+    /// <returns></returns>
+    Task<Dictionary<string, object>> ProcessAsync(UserInfoRequestValidationResult validationResult);
 }

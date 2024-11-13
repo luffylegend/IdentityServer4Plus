@@ -1,11 +1,11 @@
 ---
 name: Question
-about: This repo is not maintained anyone. All new work happens under the new organization https://github.com/DuendeSoftware.
+about: Something.
 labels: question
 ---
 
 <!--
   ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
-This repo is not maintained anyone. All new work happens under the new organization: https://github.com/DuendeSoftware.
+Something.
   ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
 -->

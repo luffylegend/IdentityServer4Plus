@@ -2,138 +2,138 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using IdentityModel;
 using IdentityServer4.Configuration;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.JsonWebTokens;
 using System;
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
-using static IdentityServer4.IdentityServerConstants;
 
-namespace IdentityServer4.Services
+namespace IdentityServer4.Services;
+
+/// <summary>
+/// Default token creation service
+/// </summary>
+public class DefaultTokenCreationService : ITokenCreationService
 {
     /// <summary>
-    /// Default token creation service
+    /// The key service
     /// </summary>
-    public class DefaultTokenCreationService : ITokenCreationService
+    protected readonly IKeyMaterialService Keys;
+
+    /// <summary>
+    /// The logger
+    /// </summary>
+    protected readonly ILogger Logger;
+
+    /// <summary>
+    ///  The clock
+    /// </summary>
+    protected readonly IClock Clock;
+
+    /// <summary>
+    /// The options
+    /// </summary>
+    protected readonly IdentityServerOptions Options;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DefaultTokenCreationService"/> class.
+    /// </summary>
+    /// <param name="clock">The options.</param>
+    /// <param name="keys">The keys.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="logger">The logger.</param>
+    public DefaultTokenCreationService(
+        IClock clock,
+        IKeyMaterialService keys,
+        IdentityServerOptions options,
+        ILogger<DefaultTokenCreationService> logger)
     {
-        /// <summary>
-        /// The key service
-        /// </summary>
-        protected readonly IKeyMaterialService Keys;
+        Clock = clock;
+        Keys = keys;
+        Options = options;
+        Logger = logger;
+    }
 
-        /// <summary>
-        /// The logger
-        /// </summary>
-        protected readonly ILogger Logger;
+    /// <summary>
+    /// Creates the token.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>
+    /// A protected and serialized security token
+    /// </returns>
+    public virtual async Task<string> CreateTokenAsync(Token token)
+    {
+        using var activity = Tracing.ServiceActivitySource.StartActivity("DefaultTokenCreationService.CreateToken");
 
-        /// <summary>
-        ///  The clock
-        /// </summary>
-        protected readonly IClock Clock;
+        var payload = await CreatePayloadAsync(token);
+        var headerElements = await CreateHeaderElementsAsync(token);
 
-        /// <summary>
-        /// The options
-        /// </summary>
-        protected readonly IdentityServerOptions Options;
+        return await CreateJwtAsync(token, payload, headerElements);
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultTokenCreationService"/> class.
-        /// </summary>
-        /// <param name="clock">The options.</param>
-        /// <param name="keys">The keys.</param>
-        /// <param name="options">The options.</param>
-        /// <param name="logger">The logger.</param>
-        public DefaultTokenCreationService(
-            IClock clock,
-            IKeyMaterialService keys,
-            IdentityServerOptions options,
-            ILogger<DefaultTokenCreationService> logger)
+    /// <summary>
+    /// Creates the JWT payload
+    /// </summary>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    protected virtual Task<string> CreatePayloadAsync(Token token)
+    {
+        var payload = token.CreateJwtPayloadDictionary(Options, Clock, Logger);
+        return Task.FromResult(JsonSerializer.Serialize(payload));
+    }
+
+    /// <summary>
+    /// Creates additional JWT header elements
+    /// </summary>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    protected virtual Task<Dictionary<string, object>> CreateHeaderElementsAsync(Token token)
+    {
+        var additionalHeaderElements = new Dictionary<string, object>();
+
+        if (token.Type == IdentityServerConstants.TokenTypes.AccessToken)
         {
-            Clock = clock;
-            Keys = keys;
-            Options = options;
-            Logger = logger;
-        }
-
-        /// <summary>
-        /// Creates the token.
-        /// </summary>
-        /// <param name="token">The token.</param>
-        /// <returns>
-        /// A protected and serialized security token
-        /// </returns>
-        public virtual async Task<string> CreateTokenAsync(Token token)
-        {
-            var header = await CreateHeaderAsync(token);
-            var payload = await CreatePayloadAsync(token);
-
-            return await CreateJwtAsync(new JwtSecurityToken(header, payload));
-        }
-
-        /// <summary>
-        /// Creates the JWT header
-        /// </summary>
-        /// <param name="token">The token.</param>
-        /// <returns>The JWT header</returns>
-        protected virtual async Task<JwtHeader> CreateHeaderAsync(Token token)
-        {
-            var credential = await Keys.GetSigningCredentialsAsync(token.AllowedSigningAlgorithms);
-
-            if (credential == null)
+            if (Options.AccessTokenJwtType.IsPresent())
             {
-                throw new InvalidOperationException("No signing credential is configured. Can't create JWT token");
+                additionalHeaderElements.Add("typ", Options.AccessTokenJwtType);
             }
-
-            var header = new JwtHeader(credential);
-
-            // emit x5t claim for backwards compatibility with v4 of MS JWT library
-            if (credential.Key is X509SecurityKey x509Key)
-            {
-                var cert = x509Key.Certificate;
-                if (Clock.UtcNow.UtcDateTime > cert.NotAfter)
-                {
-                    Logger.LogWarning("Certificate {subjectName} has expired on {expiration}", cert.Subject, cert.NotAfter.ToString(CultureInfo.InvariantCulture));
-                }
-
-                header["x5t"] = Base64Url.Encode(cert.GetCertHash());
-            }
-
-            if (token.Type == TokenTypes.AccessToken)
-            {
-                if (Options.AccessTokenJwtType.IsPresent())
-                {
-                    header["typ"] = Options.AccessTokenJwtType;
-                }
-            }
-
-            return header;
         }
-
-        /// <summary>
-        /// Creates the JWT payload
-        /// </summary>
-        /// <param name="token">The token.</param>
-        /// <returns>The JWT payload</returns>
-        protected virtual Task<JwtPayload> CreatePayloadAsync(Token token)
+        else if (token.Type == IdentityServerConstants.TokenTypes.LogoutToken)
         {
-            var payload = token.CreateJwtPayload(Clock, Options, Logger);
-            return Task.FromResult(payload);
+            if (Options.LogoutTokenJwtType.IsPresent())
+            {
+                additionalHeaderElements.Add("typ", Options.LogoutTokenJwtType);
+            }
         }
 
-        /// <summary>
-        /// Applies the signature to the JWT
-        /// </summary>
-        /// <param name="jwt">The JWT object.</param>
-        /// <returns>The signed JWT</returns>
-        protected virtual Task<string> CreateJwtAsync(JwtSecurityToken jwt)
+        return Task.FromResult(additionalHeaderElements);
+    }
+
+    /// <summary>
+    /// Creates JWT token
+    /// </summary>
+    /// <param name="token"></param>
+    /// <param name="payload"></param>
+    /// <param name="headerElements"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    protected virtual async Task<string> CreateJwtAsync(Token token, string payload,
+        Dictionary<string, object> headerElements)
+    {
+        using var activity = Tracing.ServiceActivitySource.StartActivity("DefaultTokenCreationService.CreateJwt");
+
+        var credential = await Keys.GetSigningCredentialsAsync(token.AllowedSigningAlgorithms);
+
+        if (credential == null)
         {
-            var handler = new JwtSecurityTokenHandler();
-            return Task.FromResult(handler.WriteToken(jwt));
+            throw new InvalidOperationException("No signing credential is configured. Can't create JWT token");
         }
+
+        var handler = new JsonWebTokenHandler { SetDefaultTimesOnTokenCreation = false };
+        return handler.CreateToken(payload, credential, headerElements);
     }
 }

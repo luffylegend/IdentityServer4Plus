@@ -1,13 +1,12 @@
 ﻿using Microsoft.AspNetCore.Builder;
 
-namespace JavaScriptClient
+namespace JavaScriptClient;
+
+public class Startup
 {
-    public class Startup
+    public void Configure(IApplicationBuilder app)
     {
-        public void Configure(IApplicationBuilder app)
-        {
-            app.UseDefaultFiles();
-            app.UseStaticFiles();
-        }
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
     }
 }

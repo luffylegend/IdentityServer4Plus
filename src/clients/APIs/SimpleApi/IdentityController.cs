@@ -1,27 +1,25 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 
-namespace SampleApi.Controllers
+namespace SampleApi.Controllers;
+
+[Route("identity")]
+public class IdentityController : ControllerBase
 {
-    [Route("identity")]
-    public class IdentityController : ControllerBase
+    private readonly ILogger<IdentityController> _logger;
+
+    public IdentityController(ILogger<IdentityController> logger)
     {
-        private readonly ILogger<IdentityController> _logger;
+        _logger = logger;
+    }
 
-        public IdentityController(ILogger<IdentityController> logger)
-        {
-            _logger = logger;
-        }
+    [HttpGet]
+    public ActionResult Get()
+    {
+        var claims = User.Claims.Select(c => new { c.Type, c.Value });
+        _logger.LogInformation("claims: {claims}", claims);
 
-        [HttpGet]
-        public ActionResult Get()
-        {
-            var claims = User.Claims.Select(c => new { c.Type, c.Value });
-            _logger.LogInformation("claims: {claims}", claims);
-
-            return new JsonResult(claims);
-        }
+        return new JsonResult(claims);
     }
 }

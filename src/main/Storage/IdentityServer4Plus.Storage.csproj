@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>IdentityServer4Plus.Storage</PackageId>
-    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <Description>Storage interfaces and models for IdentityServer4plus.
 (A continuation Storage interfaces and models solution for the no longer maintaining project `identity server 4`)
     </Description>
@@ -13,6 +13,7 @@
     <!-- strong naming fml -->
     <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -27,8 +28,8 @@
 
   <ItemGroup>
     <PackageReference Include="IdentityModel" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Abstractions" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
-    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
 </Project>

@@ -2,45 +2,63 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using IdentityServer4.Extensions;
+using System.Threading.Tasks;
 using IdentityServer4.Hosting;
 using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
+using IdentityServer4.Extensions;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// The result of a bad request
+/// </summary>
+public class BadRequestResult : EndpointResult<BadRequestResult>
 {
-    internal class BadRequestResult : IEndpointResult
+    /// <summary>
+    /// The error
+    /// </summary>
+    public string Error { get; }
+    /// <summary>
+    /// The error description
+    /// </summary>
+    public string ErrorDescription { get; }
+
+    /// <summary>
+    /// Ctor
+    /// </summary>
+    /// <param name="error"></param>
+    /// <param name="errorDescription"></param>
+    public BadRequestResult(string error = null, string errorDescription = null)
     {
-        public string Error { get; set; }
-        public string ErrorDescription { get; set; }
+        Error = error;
+        ErrorDescription = errorDescription;
+    }
+}
 
-        public BadRequestResult(string error = null, string errorDescription = null)
+internal class BadRequestHttpWriter : IHttpResponseWriter<BadRequestResult>
+{
+    public async Task WriteHttpResponse(BadRequestResult result, HttpContext context)
+    {
+        context.Response.StatusCode = 400;
+        context.Response.SetNoCache();
+
+        if (result.Error.IsPresent())
         {
-            Error = error;
-            ErrorDescription = errorDescription;
-        }
-
-        public async Task ExecuteAsync(HttpContext context)
-        {
-            context.Response.StatusCode = 400;
-            context.Response.SetNoCache();
-
-            if (Error.IsPresent())
+            var dto = new ResultDto
             {
-                var dto = new ResultDto
-                {
-                    error = Error,
-                    error_description = ErrorDescription
-                };
+                error = result.Error,
+                error_description = result.ErrorDescription
+            };
 
-                await context.Response.WriteJsonAsync(dto);
-            }
+            await context.Response.WriteJsonAsync(dto);
         }
+    }
 
-        internal class ResultDto
-        {
-            public string error { get; set; }
-            public string error_description { get; set; }
-        }    
+    internal class ResultDto
+    {
+#pragma warning disable IDE1006 // Naming Styles
+        public string error { get; set; }
+        public string error_description { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
     }
 }

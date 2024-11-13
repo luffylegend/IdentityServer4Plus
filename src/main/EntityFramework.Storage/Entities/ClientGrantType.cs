@@ -3,14 +3,13 @@
 
 #pragma warning disable 1591
 
-namespace IdentityServer4.EntityFramework.Entities
-{
-    public class ClientGrantType
-    {
-        public int Id { get; set; }
-        public string GrantType { get; set; }
+namespace IdentityServer4.EntityFramework.Entities;
 
-        public int ClientId { get; set; }
-        public Client Client { get; set; }
-    }
+public class ClientGrantType
+{
+    public int Id { get; set; }
+    public string GrantType { get; set; }
+
+    public int ClientId { get; set; }
+    public Client Client { get; set; }
 }

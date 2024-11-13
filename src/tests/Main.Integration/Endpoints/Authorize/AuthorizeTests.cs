@@ -4,12 +4,15 @@
 
 using FluentAssertions;
 using IdentityModel;
-using IdentityServer.IntegrationTests.Common;
 using IdentityServer4;
+using IdentityServer4.Configuration;
 using IdentityServer4.Models;
+using IdentityServer4.ResponseHandling;
 using IdentityServer4.Stores;
 using IdentityServer4.Stores.Default;
 using IdentityServer4.Test;
+using IdentityServer4.Validation;
+using IntegrationTests.Common;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -19,1145 +22,1535 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace IdentityServer.IntegrationTests.Endpoints.Authorize
+namespace IntegrationTests.Endpoints.Authorize;
+
+public class AuthorizeTests
 {
-    public class AuthorizeTests
+    private const string Category = "Authorize endpoint";
+
+    private IdentityServerPipeline _mockPipeline = new IdentityServerPipeline();
+
+    private Client _client1;
+
+    public AuthorizeTests()
     {
-        private const string Category = "Authorize endpoint";
-
-        private IdentityServerPipeline _mockPipeline = new IdentityServerPipeline();
-
-        private Client _client1;
-
-        public AuthorizeTests()
+        _mockPipeline.Clients.AddRange(new Client[] {
+        _client1 = new Client
         {
-            _mockPipeline.Clients.AddRange(new Client[] {
-                _client1 = new Client
-                {
-                    ClientId = "client1",
-                    AllowedGrantTypes = GrantTypes.Implicit,
-                    RequireConsent = false,
-                    
-                    AllowedScopes = new List<string> { "openid", "profile" },
-                    RedirectUris = new List<string> { "https://client1/callback" },
-                    AllowAccessTokensViaBrowser = true
-                },
-                new Client
-                {
-                    ClientId = "client2",
-                    AllowedGrantTypes = GrantTypes.Implicit,
-                    RequireConsent = true,
-                    
-                    AllowedScopes = new List<string> { "openid", "profile", "api1", "api2" },
-                    RedirectUris = new List<string> { "https://client2/callback" },
-                    AllowAccessTokensViaBrowser = true
-                },
-                new Client
-                {
-                    ClientId = "client3",
-                    AllowedGrantTypes = GrantTypes.Implicit,
-                    RequireConsent = false,
-                    
-                    AllowedScopes = new List<string> { "openid", "profile", "api1", "api2" },
-                    RedirectUris = new List<string> { "https://client3/callback" },
-                    AllowAccessTokensViaBrowser = true,
-                    EnableLocalLogin = false,
-                    IdentityProviderRestrictions = new List<string> { "google" }
-                },
-                new Client
-                {
-                    ClientId = "client4",
-                    AllowedGrantTypes = GrantTypes.Code,
-                    RequireClientSecret = false,
-                    RequireConsent = false,
-                    RequirePkce = false,
-                    AllowedScopes = new List<string> { "openid", "profile", "api1", "api2" },
-                    RedirectUris = new List<string> { "https://client4/callback" },
-                },
+            ClientId = "client1",
+            AllowedGrantTypes = GrantTypes.Implicit,
+            RequireConsent = false,
 
-            });
+            AllowedScopes = new List<string> { "openid", "profile" },
+            RedirectUris = new List<string> { "https://client1/callback" },
+            AllowAccessTokensViaBrowser = true
+        },
+        new Client
+        {
+            ClientId = "client2",
+            AllowedGrantTypes = GrantTypes.Implicit,
+            RequireConsent = true,
 
-            _mockPipeline.Users.Add(new TestUser
+            AllowedScopes = new List<string> { "openid", "profile", "api1", "api2" },
+            RedirectUris = new List<string> { "https://client2/callback" },
+            AllowAccessTokensViaBrowser = true
+        },
+        new Client
+        {
+            ClientId = "client3",
+            AllowedGrantTypes = GrantTypes.Implicit,
+            RequireConsent = false,
+
+            AllowedScopes = new List<string> { "openid", "profile", "api1", "api2" },
+            RedirectUris = new List<string> { "https://client3/callback" },
+            AllowAccessTokensViaBrowser = true,
+            EnableLocalLogin = false,
+            IdentityProviderRestrictions = new List<string> { "google" }
+        },
+        new Client
+        {
+            ClientId = "client4",
+            AllowedGrantTypes = GrantTypes.Code,
+            RequireClientSecret = false,
+            RequireConsent = false,
+            RequirePkce = false,
+            AllowedScopes = new List<string> { "openid", "profile", "api1", "api2" },
+            RedirectUris = new List<string> { "https://client4/callback" },
+        },
+
+    });
+
+        _mockPipeline.Users.Add(new TestUser
+        {
+            SubjectId = "bob",
+            Username = "bob",
+            Claims = new Claim[]
             {
-                SubjectId = "bob",
-                Username = "bob",
-                Claims = new Claim[]
-                {
-                    new Claim("name", "Bob Loblaw"),
-                    new Claim("email", "bob@loblaw.com"),
-                    new Claim("role", "Attorney")
-                }
-            });
+            new Claim("name", "Bob Loblaw"),
+            new Claim("email", "bob@loblaw.com"),
+            new Claim("role", "Attorney")
+            }
+        });
 
-            _mockPipeline.IdentityScopes.AddRange(new IdentityResource[] {
-                new IdentityResources.OpenId(),
-                new IdentityResources.Profile(),
-                new IdentityResources.Email()
-            });
-            _mockPipeline.ApiResources.AddRange(new ApiResource[] {
-                new ApiResource
-                {
-                    Name = "api",
-                    Scopes = { "api1", "api2" }
-                }
-            });
-            _mockPipeline.ApiScopes.AddRange(new ApiScope[] {
-                new ApiScope
-                {
-                    Name = "api1"
-                },
-                new ApiScope
-                {
-                    Name = "api2"
-                }
-            });
+        _mockPipeline.IdentityScopes.AddRange(new IdentityResource[] {
+        new IdentityResources.OpenId(),
+        new IdentityResources.Profile(),
+        new IdentityResources.Email()
+    });
+        _mockPipeline.ApiResources.AddRange(new ApiResource[] {
+        new ApiResource
+        {
+            Name = "api",
+            Scopes = { "api1", "api2" }
+        }
+    });
+        _mockPipeline.ApiScopes.AddRange(new ApiScope[] {
+        new ApiScope
+        {
+            Name = "api1"
+        },
+        new ApiScope
+        {
+            Name = "api2"
+        }
+    });
 
+        _mockPipeline.Initialize();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Get_request_should_not_return_404()
+    {
+        var response = await _mockPipeline.BrowserClient.GetAsync(IdentityServerPipeline.AuthorizeEndpoint);
+
+        response.StatusCode.Should().NotBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Post_request_without_form_should_return_415()
+    {
+        var response = await _mockPipeline.BrowserClient.PostAsync(IdentityServerPipeline.AuthorizeEndpoint, new StringContent("foo"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Post_request_should_return_200()
+    {
+        var response = await _mockPipeline.BrowserClient.PostAsync(IdentityServerPipeline.AuthorizeEndpoint,
+            new FormUrlEncodedContent(
+                new Dictionary<string, string> { }));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Get_request_should_not_return_500()
+    {
+        var response = await _mockPipeline.BrowserClient.GetAsync(IdentityServerPipeline.AuthorizeEndpoint);
+
+        ((int) response.StatusCode).Should().BeLessThan(500);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Anonymous_user_should_be_redirected_to_login_page()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData((Type) null)]
+    [InlineData(typeof(QueryStringAuthorizationParametersMessageStore))]
+    [InlineData(typeof(DistributedCacheAuthorizationParametersMessageStore))]
+    [Trait("Category", Category)]
+    public async Task Signin_request_should_have_authorization_params(Type storeType)
+    {
+        if (storeType != null)
+        {
+            _mockPipeline.OnPostConfigureServices += services =>
+            {
+                services.AddTransient(typeof(IAuthorizationParametersMessageStore), storeType);
+            };
             _mockPipeline.Initialize();
         }
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Get_request_should_not_return_404()
-        {
-            var response = await _mockPipeline.BrowserClient.GetAsync(IdentityServerPipeline.AuthorizeEndpoint);
-
-            response.StatusCode.Should().NotBe(HttpStatusCode.NotFound);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Post_request_without_form_should_return_415()
-        {
-            var response = await _mockPipeline.BrowserClient.PostAsync(IdentityServerPipeline.AuthorizeEndpoint, new StringContent("foo"));
-
-            response.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Post_request_should_return_200()
-        {
-            var response = await _mockPipeline.BrowserClient.PostAsync(IdentityServerPipeline.AuthorizeEndpoint,
-                new FormUrlEncodedContent(
-                    new Dictionary<string, string> { }));
-
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Get_request_should_not_return_500()
-        {
-            var response = await _mockPipeline.BrowserClient.GetAsync(IdentityServerPipeline.AuthorizeEndpoint);
-
-            ((int)response.StatusCode).Should().BeLessThan(500);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Anonymous_user_should_be_redirected_to_login_page()
-        {
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.LoginWasCalled.Should().BeTrue();
-        }
-
-        [Theory]
-        [InlineData((Type)null)]
-        [InlineData(typeof(QueryStringAuthorizationParametersMessageStore))]
-        [InlineData(typeof(DistributedCacheAuthorizationParametersMessageStore))]
-        [Trait("Category", Category)]
-        public async Task Signin_request_should_have_authorization_params(Type storeType)
-        {
-            if (storeType != null)
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            loginHint: "login_hint_value",
+            acrValues: "acr_1 acr_2 tenant:tenant_value idp:idp_value",
+            extra: new
             {
-                _mockPipeline.OnPostConfigureServices += services =>
-                {
-                    services.AddTransient(typeof(IAuthorizationParametersMessageStore), storeType);
-                };
-                _mockPipeline.Initialize();
-            }
+                display = "popup", // must use a valid value from the spec for display
+                ui_locales = "ui_locale_value",
+                custom_foo = "foo_value"
+            });
+        var response = await _mockPipeline.BrowserClient.GetAsync(url + "&foo=foo1&foo=foo2");
 
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                loginHint: "login_hint_value",
-                acrValues: "acr_1 acr_2 tenant:tenant_value idp:idp_value",
-                extra: new
-                {
-                    display = "popup", // must use a valid value from the spec for display
-                    ui_locales = "ui_locale_value",
-                    custom_foo = "foo_value"
-                });
-            var response = await _mockPipeline.BrowserClient.GetAsync(url + "&foo=bar");
+        _mockPipeline.LoginRequest.Should().NotBeNull();
+        _mockPipeline.LoginRequest.Client.ClientId.Should().Be("client1");
+        _mockPipeline.LoginRequest.DisplayMode.Should().Be("popup");
+        _mockPipeline.LoginRequest.UiLocales.Should().Be("ui_locale_value");
+        _mockPipeline.LoginRequest.IdP.Should().Be("idp_value");
+        _mockPipeline.LoginRequest.Tenant.Should().Be("tenant_value");
+        _mockPipeline.LoginRequest.LoginHint.Should().Be("login_hint_value");
+        _mockPipeline.LoginRequest.AcrValues.Should().BeEquivalentTo(new string[] { "acr_2", "acr_1" });
+        _mockPipeline.LoginRequest.Parameters.AllKeys.Should().Contain("foo");
+        _mockPipeline.LoginRequest.Parameters.GetValues("foo").Should().BeEquivalentTo(new[] { "foo1", "foo2" });
+    }
 
-            _mockPipeline.LoginRequest.Should().NotBeNull();
-            _mockPipeline.LoginRequest.Client.ClientId.Should().Be("client1");
-            _mockPipeline.LoginRequest.DisplayMode.Should().Be("popup");
-            _mockPipeline.LoginRequest.UiLocales.Should().Be("ui_locale_value");
-            _mockPipeline.LoginRequest.IdP.Should().Be("idp_value");
-            _mockPipeline.LoginRequest.Tenant.Should().Be("tenant_value");
-            _mockPipeline.LoginRequest.LoginHint.Should().Be("login_hint_value");
-            _mockPipeline.LoginRequest.AcrValues.Should().BeEquivalentTo(new string[] { "acr_2", "acr_1" });
-            _mockPipeline.LoginRequest.Parameters.AllKeys.Should().Contain("foo");
-            _mockPipeline.LoginRequest.Parameters["foo"].Should().Be("bar");
-        }
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Signin_response_should_allow_successful_authorization_response()
+    {
+        _mockPipeline.Subject = new IdentityServerUser("bob").CreatePrincipal();
+        _mockPipeline.BrowserClient.StopRedirectingAfter = 2;
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Signin_response_should_allow_successful_authorization_response()
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.ToString().Should().StartWith("https://client1/callback");
+
+        var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
+        authorization.IsError.Should().BeFalse();
+        authorization.IdentityToken.Should().NotBeNull();
+        authorization.State.Should().Be("123_state");
+        authorization.Values.Keys.Should().NotContain("iss");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Code_success_response_should_have_all_expected_values()
+    {
+        _mockPipeline.Subject = new IdentityServerUser("bob").CreatePrincipal();
+        _mockPipeline.BrowserClient.StopRedirectingAfter = 2;
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client4",
+            responseType: "code",
+            scope: "openid",
+            redirectUri: "https://client4/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.ToString().Should().StartWith("https://client4/callback");
+
+        var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
+        authorization.IsError.Should().BeFalse();
+        authorization.IdentityToken.Should().BeNull();
+        authorization.AccessToken.Should().BeNull();
+        authorization.Code.Should().NotBeNullOrEmpty();
+        authorization.Scope.Should().Be("openid");
+        authorization.State.Should().Be("123_state");
+        authorization.Values["session_state"].Should().NotBeNullOrEmpty();
+        authorization.Values["iss"].Should().Be("https%3A%2F%2Fserver");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Authenticated_user_with_valid_request_should_receive_authorization_response()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        _mockPipeline.BrowserClient.AllowAutoRedirect = false;
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.ToString().Should().StartWith("https://client1/callback");
+
+        var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
+        authorization.IsError.Should().BeFalse();
+        authorization.IdentityToken.Should().NotBeNull();
+        authorization.State.Should().Be("123_state");
+    }
+
+    [Theory]
+    [InlineData((Type) null)]
+    [InlineData(typeof(QueryStringAuthorizationParametersMessageStore))]
+    [InlineData(typeof(DistributedCacheAuthorizationParametersMessageStore))]
+    [Trait("Category", Category)]
+    public async Task Login_response_and_consent_response_should_receive_authorization_response(Type storeType)
+    {
+        if (storeType != null)
         {
-            _mockPipeline.Subject = new IdentityServerUser("bob").CreatePrincipal();
-            _mockPipeline.BrowserClient.StopRedirectingAfter = 2;
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
-
-            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-            response.Headers.Location.ToString().Should().StartWith("https://client1/callback");
-
-            var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
-            authorization.IsError.Should().BeFalse();
-            authorization.IdentityToken.Should().NotBeNull();
-            authorization.State.Should().Be("123_state");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Authenticated_user_with_valid_request_should_receive_authorization_response()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            _mockPipeline.BrowserClient.AllowAutoRedirect = false;
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
-
-            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-            response.Headers.Location.ToString().Should().StartWith("https://client1/callback");
-
-            var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
-            authorization.IsError.Should().BeFalse();
-            authorization.IdentityToken.Should().NotBeNull();
-            authorization.State.Should().Be("123_state");
-        }
-
-        [Theory]
-        [InlineData((Type)null)]
-        [InlineData(typeof(QueryStringAuthorizationParametersMessageStore))]
-        [InlineData(typeof(DistributedCacheAuthorizationParametersMessageStore))]
-        [Trait("Category", Category)]
-        public async Task Login_response_and_consent_response_should_receive_authorization_response(Type storeType)
-        {
-            if (storeType != null)
+            _mockPipeline.OnPostConfigureServices += services =>
             {
-                _mockPipeline.OnPostConfigureServices += services =>
-                {
-                    services.AddTransient(typeof(IAuthorizationParametersMessageStore), storeType);
-                };
-                _mockPipeline.Initialize();
-            }
-
-            _mockPipeline.Subject = new IdentityServerUser("bob").CreatePrincipal();
-
-            _mockPipeline.ConsentResponse = new ConsentResponse()
-            {
-                ScopesValuesConsented = new string[] { "openid", "api1", "profile" }
+                services.AddTransient(typeof(IAuthorizationParametersMessageStore), storeType);
             };
-
-            _mockPipeline.BrowserClient.StopRedirectingAfter = 4;
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client2",
-                responseType: "id_token token",
-                scope: "openid profile api1 api2",
-                redirectUri: "https://client2/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
-
-            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-            response.Headers.Location.ToString().Should().StartWith("https://client2/callback");
-
-            var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
-            authorization.IsError.Should().BeFalse();
-            authorization.IdentityToken.Should().NotBeNull();
-            authorization.State.Should().Be("123_state");
-            var scopes = authorization.Scope.Split(' ');
-            scopes.Should().BeEquivalentTo(new string[] { "profile", "api1", "openid" });
+            _mockPipeline.Initialize();
         }
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Idp_should_be_passed_to_login_page()
+        _mockPipeline.Subject = new IdentityServerUser("bob").CreatePrincipal();
+
+        _mockPipeline.ConsentResponse = new ConsentResponse()
         {
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client3",
-                responseType: "id_token",
-                scope: "openid profile",
-                redirectUri: "https://client3/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                acrValues: "idp:google");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
+            ScopesValuesConsented = new string[] { "openid", "api1", "profile" }
+        };
 
-            _mockPipeline.LoginWasCalled.Should().BeTrue();
-            _mockPipeline.LoginRequest.IdP.Should().Be("google");
-        }
+        _mockPipeline.BrowserClient.StopRedirectingAfter = 4;
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Idp_not_allowed_by_client_should_not_be_passed_to_login_page()
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client2",
+            responseType: "id_token token",
+            scope: "openid profile api1 api2",
+            redirectUri: "https://client2/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.ToString().Should().StartWith("https://client2/callback");
+
+        var authorization = new IdentityModel.Client.AuthorizeResponse(response.Headers.Location.ToString());
+        authorization.IsError.Should().BeFalse();
+        authorization.IdentityToken.Should().NotBeNull();
+        authorization.State.Should().Be("123_state");
+        var scopes = authorization.Scope.Split(' ');
+        scopes.Should().BeEquivalentTo(new string[] { "profile", "api1", "openid" });
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Idp_should_be_passed_to_login_page()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: "idp:google");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+        _mockPipeline.LoginRequest.IdP.Should().Be("google");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Idp_not_allowed_by_client_should_not_be_passed_to_login_page()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: "idp:facebook");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+        _mockPipeline.LoginRequest.IdP.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task User_idp_not_allowed_by_client_should_cause_login_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+        _mockPipeline.LoginRequest.IdP.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task User_idp_does_not_match_acr_idp_should_cause_login_page()
+    {
+        var user = new IdentityServerUser("bob") { IdentityProvider = "idp1" };
+        await _mockPipeline.LoginAsync(user.CreatePrincipal());
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: "idp:idp2");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+        _mockPipeline.LoginRequest.IdP.Should().Be("idp2");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task When_tenant_validation_enabled_user_tenant_does_not_match_acr_tenant_should_cause_login_page()
+    {
+        _mockPipeline.Options.ValidateTenantOnAuthorization = true;
+
+        var user = new IdentityServerUser("bob") { Tenant = "t1" };
+        await _mockPipeline.LoginAsync(user.CreatePrincipal());
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: "tenant:t2");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+        _mockPipeline.LoginRequest.Tenant.Should().Be("t2");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task When_tenant_validation_disabled_user_tenant_does_not_match_acr_tenant_should_not_cause_login_page()
+    {
+        var user = new IdentityServerUser("bob") { Tenant = "t1" };
+        await _mockPipeline.LoginAsync(user.CreatePrincipal());
+
+        _mockPipeline.LoginWasCalled = false;
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: "tenant:t2");
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeFalse();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task For_invalid_client_error_page_should_not_receive_client_id()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: null,
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://invalid",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.ClientId.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Error_page_should_receive_client_id()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://invalid",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.ClientId.Should().Be("client1");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_redirect_uri_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://invalid",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("redirect_uri");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_redirect_uri_should_not_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://invalid",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
+        _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_client_id_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1_invalid",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_client_id_should_not_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1_invalid",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
+        _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Missing_redirect_uri_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1_invalid",
+            responseType: "id_token",
+            scope: "openid",
+            //redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("client");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Missing_redirect_uri_should_not_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1_invalid",
+            responseType: "id_token",
+            scope: "openid",
+            //redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
+        _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Malformed_redirect_uri_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1_invalid",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "invalid-uri",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("client");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Disabled_client_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        _client1.Enabled = false;
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Disabled_client_should_not_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        _client1.Enabled = false;
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
+        _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_protocol_for_client_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        _client1.ProtocolType = "invalid";
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("protocol");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_protocol_for_client_should_not_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        _client1.ProtocolType = "invalid";
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
+        _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_response_type_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "invalid",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnsupportedResponseType);
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_response_type_should_not_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "invalid",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
+        _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_response_mode_for_flow_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            responseMode: "query",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("response_mode");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_response_mode_for_flow_should_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            responseMode: "query",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_response_mode_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            responseMode: "invalid",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnsupportedResponseType);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("response_mode");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_response_mode_should_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            responseMode: "invalid",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Missing_scope_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            //scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Missing_scope_should_pass_return_url_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            //scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Explicit_response_mode_should_be_passed_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            responseMode: "form_post",
+            //scope: "openid", // this will cause the error
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("form_post");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Scope_too_long_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: new string('x', 500),
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Missing_openid_scope_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("openid");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Client_not_allowed_access_to_scope_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid email",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidScope);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Missing_nonce_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state"
+        //nonce: "123_nonce"
+        );
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("nonce");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Nonce_too_long_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: new string('x', 500));
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("nonce");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Locale_too_long_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { ui_locales = new string('x', 500) });
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("ui_locales");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Invalid_max_age_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { max_age = "invalid" });
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("max_age");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Negative_max_age_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { max_age = "-10" });
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("max_age");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Login_hint_too_long_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            loginHint: new string('x', 500));
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("login_hint");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Acr_values_too_long_should_show_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: new string('x', 500));
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
+        _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("acr_values");
+        _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
+        _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Overlapping_identity_scopes_and_api_scopes_should_show_error_page()
+    {
+        _mockPipeline.IdentityScopes.Add(new IdentityResource("foo", "Foo", new string[] { "name" }));
+        _mockPipeline.IdentityScopes.Add(new IdentityResource("bar", "Bar", new string[] { "name" }));
+        _mockPipeline.ApiScopes.Add(new ApiScope("foo", "Foo"));
+        _mockPipeline.ApiScopes.Add(new ApiScope("bar", "Bar"));
+
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid foo bar",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+
+        Func<Task> a = () => _mockPipeline.BrowserClient.GetAsync(url);
+        await a.Should().ThrowAsync<Exception>();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Ui_locales_should_be_passed_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: new string('x', 500),
+            extra: new { ui_locales = "fr-FR" });
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.UiLocales.Should().Be("fr-FR");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Display_mode_should_be_passed_to_error_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            acrValues: new string('x', 500),
+            extra: new { display = "popup" });
+        await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+        _mockPipeline.ErrorMessage.DisplayMode.Should().Be("popup");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Unicode_values_in_url_should_be_processed_correctly()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+        url = url.Replace(IdentityServerPipeline.BaseUrl, "https://грант.рф");
+
+        var result = await _mockPipeline.BackChannelClient.GetAsync(url);
+        result.Headers.Location.Authority.Should().Be("xn--80af5akm.xn--p1ai");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Code_flow_with_fragment_response_type_should_be_allowed()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client4",
+            responseType: "code",
+            responseMode: "fragment",
+            scope: "openid",
+            redirectUri: "https://client4/callback",
+            state: "123_state",
+            nonce: "123_nonce");
+
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Prompt_login_should_show_login_page_and_preserve_prompt_values()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "login" }
+        );
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+        _mockPipeline.LoginRequest.PromptModes.Should().Contain("login");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Max_age_0_should_show_login_page()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { max_age = "0" }
+        );
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.LoginWasCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Prompt_login_should_allow_user_to_login_and_complete_authorization()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "login" }
+        );
+
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        // this simulates the login page returning to the returnUrl which is the authorize callback page
+        _mockPipeline.BrowserClient.AllowAutoRedirect = false;
+        response = await _mockPipeline.BrowserClient.GetAsync(IdentityServerPipeline.BaseUrl + _mockPipeline.LoginReturnUrl);
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.ToString().Should().StartWith("https://client1/callback");
+        response.Headers.Location.ToString().Should().Contain("id_token=");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Max_age_0_should_allow_user_to_login_and_complete_authorization()
+    {
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { max_age = "0" }
+        );
+
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        // this simulates the login page returning to the returnUrl which is the authorize callback page
+        _mockPipeline.BrowserClient.AllowAutoRedirect = false;
+        response = await _mockPipeline.BrowserClient.GetAsync(IdentityServerPipeline.BaseUrl + _mockPipeline.LoginReturnUrl);
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location.ToString().Should().StartWith("https://client1/callback");
+        response.Headers.Location.ToString().Should().Contain("id_token=");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Unknown_prompt_should_error()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "unknown" }
+        );
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Without_config_prompt_create_should_be_treated_as_unknown()
+    {
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "create" }
+        );
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task With_config_prompt_create_should_show_create_account_page_and_preserve_prompt_values()
+    {
+        _mockPipeline.OnPreConfigureServices += svcs =>
         {
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client3",
-                responseType: "id_token",
-                scope: "openid profile",
-                redirectUri: "https://client3/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                acrValues: "idp:facebook");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
+            svcs.PostConfigure<IdentityServerOptions>(opts =>
+            {
+                opts.UserInteraction.CreateAccountUrl = "/account/create";
+            });
+        };
+        _mockPipeline.Initialize();
 
-            _mockPipeline.LoginWasCalled.Should().BeTrue();
-            _mockPipeline.LoginRequest.IdP.Should().BeNull();
-        }
+        await _mockPipeline.LoginAsync("bob");
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task User_idp_not_allowed_by_client_should_cause_login_page()
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "create" }
+        );
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+
+        _mockPipeline.CreateAccountWasCalled.Should().BeTrue();
+        _mockPipeline.CreateAccountRequest.PromptModes.Should().Contain("create");
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Prompt_create_and_login_should_be_an_error()
+    {
+        _mockPipeline.OnPreConfigureServices += svcs =>
         {
-            await _mockPipeline.LoginAsync("bob");
+            svcs.PostConfigure<IdentityServerOptions>(opts =>
+            {
+                opts.UserInteraction.CreateAccountUrl = "/account/create";
+            });
+        };
+        _mockPipeline.Initialize();
 
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client3",
-                responseType: "id_token",
-                scope: "openid profile",
-                redirectUri: "https://client3/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
+        await _mockPipeline.LoginAsync("bob");
 
-            _mockPipeline.LoginWasCalled.Should().BeTrue();
-            _mockPipeline.LoginRequest.IdP.Should().BeNull();
-        }
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client3",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client3/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "create login" }
+        );
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task For_invalid_client_error_page_should_not_receive_client_id()
+        _mockPipeline.ErrorWasCalled.Should().BeTrue();
+    }
+
+
+    [Theory]
+    [InlineData((Type) null)]
+    [InlineData(typeof(QueryStringAuthorizationParametersMessageStore))]
+    [InlineData(typeof(DistributedCacheAuthorizationParametersMessageStore))]
+    [Trait("Category", Category)]
+    public async Task Custom_request_should_have_authorization_params(Type storeType)
+    {
+        var mockAuthzInteractionService = new MockAuthzInteractionService();
+        mockAuthzInteractionService.Response.RedirectUrl = "/custom";
+
+        if (storeType != null)
         {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: null,
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://invalid",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.ClientId.Should().BeNull();
+            _mockPipeline.OnPostConfigureServices += services =>
+            {
+                services.AddTransient(typeof(IAuthorizeInteractionResponseGenerator), svc => mockAuthzInteractionService);
+                services.AddTransient(typeof(IAuthorizationParametersMessageStore), storeType);
+            };
         }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Error_page_should_receive_client_id()
+        else
         {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://invalid",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.ClientId.Should().Be("client1");
+            _mockPipeline.OnPostConfigureServices += services =>
+            {
+                services.AddTransient(typeof(IAuthorizeInteractionResponseGenerator), svc => mockAuthzInteractionService);
+            };
         }
+        _mockPipeline.Initialize();
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_redirect_uri_should_show_error_page()
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            loginHint: "login_hint_value",
+            acrValues: "acr_1 acr_2 tenant:tenant_value idp:idp_value",
+            extra: new
+            {
+                display = "popup", // must use a valid value from the spec for display
+                ui_locales = "ui_locale_value",
+                custom_foo = "foo_value"
+            });
+        var response = await _mockPipeline.BrowserClient.GetAsync(url + "&foo=bar");
+
+        _mockPipeline.CustomWasCalled.Should().BeTrue();
+
+        _mockPipeline.CustomRequest.Should().NotBeNull();
+        _mockPipeline.CustomRequest.Client.ClientId.Should().Be("client1");
+        _mockPipeline.CustomRequest.DisplayMode.Should().Be("popup");
+        _mockPipeline.CustomRequest.UiLocales.Should().Be("ui_locale_value");
+        _mockPipeline.CustomRequest.IdP.Should().Be("idp_value");
+        _mockPipeline.CustomRequest.Tenant.Should().Be("tenant_value");
+        _mockPipeline.CustomRequest.LoginHint.Should().Be("login_hint_value");
+        _mockPipeline.CustomRequest.AcrValues.Should().BeEquivalentTo(new string[] { "acr_2", "acr_1" });
+        _mockPipeline.CustomRequest.Parameters.AllKeys.Should().Contain("foo");
+        _mockPipeline.CustomRequest.Parameters["foo"].Should().Be("bar");
+    }
+
+    [Fact]
+    public async Task Custom_prompt_values_should_raise_error_with_default_interaction_service()
+    {
+        _mockPipeline.Options.UserInteraction.PromptValuesSupported.Add("custom-prompt");
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "custom-prompt" }
+        );
+
+        _mockPipeline.BrowserClient.AllowAutoRedirect = false;
+
+        Func<Task> a = () => _mockPipeline.BrowserClient.GetAsync(url);
+        await a.Should().ThrowAsync<Exception>();
+    }
+
+    [Fact]
+    public async Task Custom_prompt_value_should_be_passed_to_custom_interaction_service()
+    {
+        var mockAuthzInteractionService = new MockAuthzInteractionService();
+        mockAuthzInteractionService.Response.RedirectUrl = "/custom";
+        _mockPipeline.OnPostConfigureServices += services =>
         {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://invalid",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("redirect_uri");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_redirect_uri_should_not_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://invalid",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
-            _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_client_id_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1_invalid",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_client_id_should_not_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1_invalid",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
-            _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Missing_redirect_uri_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1_invalid",
-                responseType: "id_token",
-                scope: "openid",
-                //redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("client");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Missing_redirect_uri_should_not_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1_invalid",
-                responseType: "id_token",
-                scope: "openid",
-                //redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
-            _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Malformed_redirect_uri_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1_invalid",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "invalid-uri",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("client");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Disabled_client_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            _client1.Enabled = false;
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Disabled_client_should_not_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            _client1.Enabled = false;
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
-            _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_protocol_for_client_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            _client1.ProtocolType = "invalid";
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnauthorizedClient);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("protocol");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_protocol_for_client_should_not_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            _client1.ProtocolType = "invalid";
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
-            _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_response_type_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "invalid",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnsupportedResponseType);
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_response_type_should_not_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "invalid",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().BeNull();
-            _mockPipeline.ErrorMessage.ResponseMode.Should().BeNull();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_response_mode_for_flow_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                responseMode: "query",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("response_mode");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_response_mode_for_flow_should_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                responseMode: "query",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_response_mode_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                responseMode: "invalid",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.UnsupportedResponseType);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("response_mode");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_response_mode_should_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                responseMode: "invalid",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Missing_scope_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                //scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Missing_scope_should_pass_return_url_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                //scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Explicit_response_mode_should_be_passed_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                responseMode: "form_post",
-                //scope: "openid", // this will cause the error
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("form_post");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Scope_too_long_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: new string('x', 500),
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Missing_openid_scope_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "profile",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("openid");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Client_not_allowed_access_to_scope_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid email",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidScope);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("scope");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Missing_nonce_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state"
-            //nonce: "123_nonce"
-            );
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("nonce");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Nonce_too_long_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: new string('x', 500));
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("nonce");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Locale_too_long_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                extra: new { ui_locales = new string('x', 500) });
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("ui_locales");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Invalid_max_age_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                extra: new { max_age = "invalid" });
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("max_age");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Negative_max_age_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                extra: new { max_age = "-10" });
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("max_age");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Login_hint_too_long_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                loginHint: new string('x', 500));
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("login_hint");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Acr_values_too_long_should_show_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                acrValues: new string('x', 500));
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.Error.Should().Be(OidcConstants.AuthorizeErrors.InvalidRequest);
-            _mockPipeline.ErrorMessage.ErrorDescription.Should().Contain("acr_values");
-            _mockPipeline.ErrorMessage.RedirectUri.Should().StartWith("https://client1/callback");
-            _mockPipeline.ErrorMessage.ResponseMode.Should().Be("fragment");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Overlapping_identity_scopes_and_api_scopes_should_show_error_page()
-        {
-            _mockPipeline.IdentityScopes.Add(new IdentityResource("foo", "Foo", new string[] { "name" }));
-            _mockPipeline.IdentityScopes.Add(new IdentityResource("bar", "Bar", new string[] { "name" }));
-            _mockPipeline.ApiScopes.Add(new ApiScope("foo", "Foo"));
-            _mockPipeline.ApiScopes.Add(new ApiScope("bar", "Bar"));
-
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid foo bar",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-
-            Func<Task> a = () => _mockPipeline.BrowserClient.GetAsync(url);
-            await a.Should().ThrowAsync<Exception>();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Ui_locales_should_be_passed_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                acrValues: new string('x', 500),
-                extra: new { ui_locales = "fr-FR" });
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.UiLocales.Should().Be("fr-FR");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Display_mode_should_be_passed_to_error_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                acrValues: new string('x', 500),
-                extra: new { display = "popup" });
-            await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.ErrorWasCalled.Should().BeTrue();
-            _mockPipeline.ErrorMessage.DisplayMode.Should().Be("popup");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Unicode_values_in_url_should_be_processed_correctly()
-        {
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client1",
-                responseType: "id_token",
-                scope: "openid",
-                redirectUri: "https://client1/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-            url = url.Replace(IdentityServerPipeline.BaseUrl, "https://грант.рф");
-
-            var result = await _mockPipeline.BackChannelClient.GetAsync(url);
-            result.Headers.Location.Authority.Should().Be("xn--80af5akm.xn--p1ai");
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Code_flow_with_fragment_response_type_should_be_allowed()
-        {
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client4",
-                responseType: "code",
-                responseMode: "fragment",
-                scope: "openid",
-                redirectUri: "https://client4/callback",
-                state: "123_state",
-                nonce: "123_nonce");
-
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
-            _mockPipeline.LoginWasCalled.Should().BeTrue();
-        }
-
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Prompt_login_should_show_login_page()
-        {
-            await _mockPipeline.LoginAsync("bob");
-
-            var url = _mockPipeline.CreateAuthorizeUrl(
-                clientId: "client3",
-                responseType: "id_token",
-                scope: "openid profile",
-                redirectUri: "https://client3/callback",
-                state: "123_state",
-                nonce: "123_nonce",
-                extra:new { prompt = "login" }
-            );
-            var response = await _mockPipeline.BrowserClient.GetAsync(url);
-
-            _mockPipeline.LoginWasCalled.Should().BeTrue();
-        }
+            services.AddTransient(typeof(IAuthorizeInteractionResponseGenerator), svc => mockAuthzInteractionService);
+        };
+        _mockPipeline.Initialize();
+
+        _mockPipeline.Options.UserInteraction.PromptValuesSupported.Add("custom-prompt");
+
+        await _mockPipeline.LoginAsync("bob");
+
+        var url = _mockPipeline.CreateAuthorizeUrl(
+            clientId: "client1",
+            responseType: "id_token",
+            scope: "openid profile",
+            redirectUri: "https://client1/callback",
+            state: "123_state",
+            nonce: "123_nonce",
+            extra: new { prompt = "custom-prompt" }
+        );
+
+        _mockPipeline.BrowserClient.AllowAutoRedirect = false;
+
+        var response = await _mockPipeline.BrowserClient.GetAsync(url);
+        response.Headers.Location.GetLeftPart(UriPartial.Path).Should().Be("https://server/custom");
+        mockAuthzInteractionService.Request.PromptModes.Should()
+            .Contain("custom-prompt").And
+            .HaveCount(1);
+    }
+}
+
+public class MockAuthzInteractionService : IAuthorizeInteractionResponseGenerator
+{
+    public InteractionResponse Response { get; set; } = new InteractionResponse();
+    public ValidatedAuthorizeRequest Request { get; internal set; }
+
+    public Task<InteractionResponse> ProcessInteractionAsync(ValidatedAuthorizeRequest request, ConsentResponse consent = null)
+    {
+        Request = request;
+        return Task.FromResult(Response);
     }
 }

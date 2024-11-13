@@ -6,15 +6,14 @@ using IdentityServer4.ResponseHandling;
 using IdentityServer4.Validation;
 using System.Threading.Tasks;
 
-namespace IdentityServer.UnitTests.Common
-{
-    internal class StubAuthorizeResponseGenerator : IAuthorizeResponseGenerator
-    {
-        public AuthorizeResponse Response { get; set; } = new AuthorizeResponse();
+namespace UnitTests.Common;
 
-        public Task<AuthorizeResponse> CreateResponseAsync(ValidatedAuthorizeRequest request)
-        {
-            return Task.FromResult(Response);
-        }
+internal class StubAuthorizeResponseGenerator : IAuthorizeResponseGenerator
+{
+    public AuthorizeResponse Response { get; set; } = new AuthorizeResponse();
+
+    public Task<AuthorizeResponse> CreateResponseAsync(ValidatedAuthorizeRequest request)
+    {
+        return Task.FromResult(Response);
     }
 }

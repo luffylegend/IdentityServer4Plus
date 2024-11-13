@@ -1,68 +1,64 @@
-using Clients;
+﻿using Clients;
 using IdentityModel.Client;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace ConsoleResourceOwnerFlowReference
+namespace ConsoleResourceOwnerFlowReference;
+
+public class Program
 {
-    public class Program
+    static async Task Main()
     {
-        static async Task Main()
+        Console.Title = "Console ResourceOwner Flow Reference";
+
+        var response = await RequestTokenAsync();
+        response.Show();
+
+        Console.ReadLine();
+        await CallServiceAsync(response.AccessToken);
+    }
+
+    static async Task<TokenResponse> RequestTokenAsync()
+    {
+        var client = new HttpClient();
+
+        var disco = await client.GetDiscoveryDocumentAsync(Constants.Authority);
+        if (disco.IsError) throw new Exception(disco.Error);
+
+        var response = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
-            Console.Title = "Console ResourceOwner Flow Reference";
+            Address = disco.TokenEndpoint,
 
-            var response = await RequestTokenAsync();
-            response.Show();
+            ClientId = "roclient.reference",
+            ClientSecret = "secret",
 
-            Console.ReadLine();
-            await CallServiceAsync(response.AccessToken);
-        }
+            UserName = "bob",
+            Password = "bob",
 
-        static async Task<TokenResponse> RequestTokenAsync()
+            Scope = "resource1.scope1 resource2.scope1 scope3"
+        });
+
+        if (response.IsError) throw new Exception(response.Error);
+        return response;
+    }
+
+    static async Task CallServiceAsync(string token)
+    {
+        var baseAddress = Constants.SampleApi;
+
+        var client = new HttpClient
         {
-            var client = new HttpClient();
+            BaseAddress = new Uri(baseAddress)
+        };
 
-            var disco = await client.GetDiscoveryDocumentAsync(Constants.Authority);
-            if (disco.IsError) throw new Exception(disco.Error);
+        client.SetBearerToken(token);
 
-            var response = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
-            {
-                Address = disco.TokenEndpoint,
+        var response = await client.GetStringAsync("identity");
 
-                ClientId = "roclient.reference",
-                ClientSecret = "secret",
+        "\n\nService claims:".ConsoleGreen();
+        Console.WriteLine(response.PrettyPrintJson());
 
-                UserName = "bob",
-                Password = "bob",
-
-                Scope = "resource1.scope1 resource2.scope1 scope3"
-            });
-
-            if (response.IsError) throw new Exception(response.Error);
-            return response;
-        }
-
-        static async Task CallServiceAsync(string token)
-        {
-            var baseAddress = Constants.SampleApi;
-
-            var client = new HttpClient
-            {
-                BaseAddress = new Uri(baseAddress)
-            };
-
-            client.SetBearerToken(token);
-
-            while (true)
-            {
-                var response = await client.GetStringAsync("identity");
-
-                "\n\nService claims:".ConsoleGreen();
-                Console.WriteLine(response.PrettyPrintJson());
-
-                Console.ReadLine();
-            }
-        }
+        Console.ReadLine();
     }
 }

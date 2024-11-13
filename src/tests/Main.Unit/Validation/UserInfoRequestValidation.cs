@@ -4,91 +4,90 @@
 
 using FluentAssertions;
 using IdentityModel;
-using IdentityServer.UnitTests.Common;
-using IdentityServer.UnitTests.Validation.Setup;
 using IdentityServer4.Stores;
 using IdentityServer4.Validation;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using UnitTests.Common;
+using UnitTests.Validation.Setup;
 using Xunit;
 
-namespace IdentityServer.UnitTests.Validation
+namespace UnitTests.Validation;
+
+public class UserInfoRequestValidation
 {
-    public class UserInfoRequestValidation
+    private const string Category = "UserInfo Request Validation Tests";
+    private IClientStore _clients = new InMemoryClientStore(TestClients.Get());
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Token_without_sub_should_fail()
     {
-        private const string Category = "UserInfo Request Validation Tests";
-        private IClientStore _clients = new InMemoryClientStore(TestClients.Get());
-
-        [Fact]
-        [Trait("Category", Category)] 
-        public async Task Token_without_sub_should_fail()
+        var tokenResult = new TokenValidationResult
         {
-            var tokenResult = new TokenValidationResult
-            {
-                IsError = false,
-                Client = await _clients.FindEnabledClientByIdAsync("codeclient"),
-                Claims = new List<Claim>()
-            };
+            IsError = false,
+            Client = await _clients.FindEnabledClientByIdAsync("codeclient"),
+            Claims = new List<Claim>()
+        };
 
-            var validator = new UserInfoRequestValidator(
-                new TestTokenValidator(tokenResult),
-                new TestProfileService(shouldBeActive: true),
-                TestLogger.Create<UserInfoRequestValidator>());
+        var validator = new UserInfoRequestValidator(
+            new TestTokenValidator(tokenResult),
+            new TestProfileService(shouldBeActive: true),
+            TestLogger.Create<UserInfoRequestValidator>());
 
-            var result = await validator.ValidateRequestAsync("token");
+        var result = await validator.ValidateRequestAsync("token");
 
-            result.IsError.Should().BeTrue();
-            result.Error.Should().Be(OidcConstants.ProtectedResourceErrors.InvalidToken);
-        }
+        result.IsError.Should().BeTrue();
+        result.Error.Should().Be(OidcConstants.ProtectedResourceErrors.InvalidToken);
+    }
 
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Active_user_should_succeed()
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Active_user_should_succeed()
+    {
+        var tokenResult = new TokenValidationResult
         {
-            var tokenResult = new TokenValidationResult
-            {
-                IsError = false,
-                Client = await _clients.FindEnabledClientByIdAsync("codeclient"),
-                Claims = new List<Claim>
-                {
-                    new Claim("sub", "123")
-                },
-            };
-
-            var validator = new UserInfoRequestValidator(
-                new TestTokenValidator(tokenResult),
-                new TestProfileService(shouldBeActive: true),
-                TestLogger.Create<UserInfoRequestValidator>());
-
-            var result = await validator.ValidateRequestAsync("token");
-
-            result.IsError.Should().BeFalse();
-        }
-
-        [Fact]
-        [Trait("Category", Category)]
-        public async Task Inactive_user_should_fail()
+            IsError = false,
+            Client = await _clients.FindEnabledClientByIdAsync("codeclient"),
+            Claims = new List<Claim>
         {
-            var tokenResult = new TokenValidationResult
-            {
-                IsError = false,
-                Client = await _clients.FindEnabledClientByIdAsync("codeclient"),
-                Claims = new List<Claim>
-                {
-                    new Claim("sub", "123")
-                },
-            };
+            new Claim("sub", "123")
+        },
+        };
 
-            var validator = new UserInfoRequestValidator(
-                new TestTokenValidator(tokenResult),
-                new TestProfileService(shouldBeActive: false),
-                TestLogger.Create<UserInfoRequestValidator>());
+        var validator = new UserInfoRequestValidator(
+            new TestTokenValidator(tokenResult),
+            new TestProfileService(shouldBeActive: true),
+            TestLogger.Create<UserInfoRequestValidator>());
 
-            var result = await validator.ValidateRequestAsync("token");
+        var result = await validator.ValidateRequestAsync("token");
 
-            result.IsError.Should().BeTrue();
-            result.Error.Should().Be(OidcConstants.ProtectedResourceErrors.InvalidToken);
-        }
+        result.IsError.Should().BeFalse();
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public async Task Inactive_user_should_fail()
+    {
+        var tokenResult = new TokenValidationResult
+        {
+            IsError = false,
+            Client = await _clients.FindEnabledClientByIdAsync("codeclient"),
+            Claims = new List<Claim>
+        {
+            new Claim("sub", "123")
+        },
+        };
+
+        var validator = new UserInfoRequestValidator(
+            new TestTokenValidator(tokenResult),
+            new TestProfileService(shouldBeActive: false),
+            TestLogger.Create<UserInfoRequestValidator>());
+
+        var result = await validator.ValidateRequestAsync("token");
+
+        result.IsError.Should().BeTrue();
+        result.Error.Should().Be(OidcConstants.ProtectedResourceErrors.InvalidToken);
     }
 }

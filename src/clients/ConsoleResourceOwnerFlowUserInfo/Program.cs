@@ -4,63 +4,62 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace ConsoleResourceOwnerFlowUserInfo
+namespace ConsoleResourceOwnerFlowUserInfo;
+
+class Program
 {
-    class Program
+    static HttpClient _tokenClient = new HttpClient();
+    static DiscoveryCache _cache = new DiscoveryCache(Constants.Authority);
+
+    static async Task Main()
     {
-        static HttpClient _tokenClient = new HttpClient();
-        static DiscoveryCache _cache = new DiscoveryCache(Constants.Authority);
+        Console.Title = "Console ResourceOwner Flow UserInfo";
 
-        static async Task Main()
+        var response = await RequestTokenAsync();
+        response.Show();
+
+        await GetClaimsAsync(response.AccessToken);
+    }
+
+    static async Task<TokenResponse> RequestTokenAsync()
+    {
+        var disco = await _cache.GetAsync();
+        if (disco.IsError) throw new Exception(disco.Error);
+
+        var response = await _tokenClient.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
-            Console.Title = "Console ResourceOwner Flow UserInfo";
+            Address = disco.TokenEndpoint,
 
-            var response = await RequestTokenAsync();
-            response.Show();
+            ClientId = "roclient",
+            ClientSecret = "secret",
 
-            await GetClaimsAsync(response.AccessToken);
-        }
+            UserName = "bob",
+            Password = "bob",
 
-        static async Task<TokenResponse> RequestTokenAsync()
+            Scope = "openid custom.profile"
+        });
+
+        if (response.IsError) throw new Exception(response.Error);
+        return response;
+    }
+
+    static async Task GetClaimsAsync(string token)
+    {
+        var disco = await _cache.GetAsync();
+        if (disco.IsError) throw new Exception(disco.Error);
+
+        var response = await _tokenClient.GetUserInfoAsync(new UserInfoRequest
         {
-            var disco = await _cache.GetAsync();
-            if (disco.IsError) throw new Exception(disco.Error);
+            Address = disco.UserInfoEndpoint,
+            Token = token
+        });
 
-            var response = await _tokenClient.RequestPasswordTokenAsync(new PasswordTokenRequest
-            {
-                Address = disco.TokenEndpoint,
+        if (response.IsError) throw new Exception(response.Error);
 
-                ClientId = "roclient",
-                ClientSecret = "secret",
-
-                UserName = "bob",
-                Password = "bob",
-
-                Scope = "openid custom.profile"
-            });
-
-            if (response.IsError) throw new Exception(response.Error);
-            return response;
-        }
-
-        static async Task GetClaimsAsync(string token)
+        "\n\nUser claims:".ConsoleGreen();
+        foreach (var claim in response.Claims)
         {
-            var disco = await _cache.GetAsync();
-            if (disco.IsError) throw new Exception(disco.Error);
-
-            var response = await _tokenClient.GetUserInfoAsync(new UserInfoRequest
-            {
-                Address = disco.UserInfoEndpoint,
-                Token = token
-            });
-
-            if (response.IsError) throw new Exception(response.Error);
-
-            "\n\nUser claims:".ConsoleGreen();
-            foreach (var claim in response.Claims)
-            {
-                Console.WriteLine("{0}\n {1}", claim.Type, claim.Value);
-            }
+            Console.WriteLine("{0}\n {1}", claim.Type, claim.Value);
         }
     }
 }

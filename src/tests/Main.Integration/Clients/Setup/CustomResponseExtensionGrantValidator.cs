@@ -7,36 +7,35 @@ using IdentityServer4.Validation;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace IdentityServer.IntegrationTests.Clients.Setup
+namespace IntegrationTests.Clients.Setup;
+
+public class CustomResponseExtensionGrantValidator : IExtensionGrantValidator
 {
-    public class CustomResponseExtensionGrantValidator : IExtensionGrantValidator
+    public Task ValidateAsync(ExtensionGrantValidationContext context)
     {
-        public Task ValidateAsync(ExtensionGrantValidationContext context)
+        var response = new Dictionary<string, object>
+    {
+        { "string_value", "some_string" },
+        { "int_value", 42 },
+        { "dto",  CustomResponseDto.Create }
+    };
+
+        var credential = context.Request.Raw.Get("outcome");
+
+        if (credential == "succeed")
         {
-            var response = new Dictionary<string, object>
-            {
-                { "string_value", "some_string" },
-                { "int_value", 42 },
-                { "dto",  CustomResponseDto.Create }
-            };
-
-            var credential = context.Request.Raw.Get("outcome");
-
-            if (credential == "succeed")
-            {
-                context.Result = new GrantValidationResult("bob", "custom", customResponse: response);
-            }
-            else
-            {
-                context.Result = new GrantValidationResult(TokenRequestErrors.InvalidGrant, "invalid_credential", response);
-            }
-
-            return Task.CompletedTask;
+            context.Result = new GrantValidationResult("bob", "custom", customResponse: response);
+        }
+        else
+        {
+            context.Result = new GrantValidationResult(TokenRequestErrors.InvalidGrant, "invalid_credential", response);
         }
 
-        public string GrantType
-        {
-            get { return "custom"; }
-        }
+        return Task.CompletedTask;
+    }
+
+    public string GrantType
+    {
+        get { return "custom"; }
     }
 }

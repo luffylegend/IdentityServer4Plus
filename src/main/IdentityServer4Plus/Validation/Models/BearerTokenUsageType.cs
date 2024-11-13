@@ -5,12 +5,11 @@
 
 #pragma warning disable 1591
 
-namespace IdentityServer4.Validation
+namespace IdentityServer4.Validation;
+
+public enum BearerTokenUsageType
 {
-    public enum BearerTokenUsageType
-    {
-        AuthorizationHeader = 0,
-        PostBody = 1,
-        QueryString = 2
-    }
+    AuthorizationHeader = 0,
+    PostBody = 1,
+    QueryString = 2
 }

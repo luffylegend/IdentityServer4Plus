@@ -11,169 +11,203 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Services
+namespace IdentityServer4.Services;
+
+/// <summary>
+/// Default back-channel logout notification implementation.
+/// </summary>
+public class DefaultBackChannelLogoutService : IBackChannelLogoutService
 {
     /// <summary>
-    /// Default back-channel logout notification implementation.
+    /// Default value for the back-channel JWT lifetime.
     /// </summary>
-    public class DefaultBackChannelLogoutService : IBackChannelLogoutService
+    protected const int DefaultLogoutTokenLifetime = 5 * 60;
+
+    /// <summary>
+    /// The system clock;
+    /// </summary>
+    protected IClock Clock { get; }
+
+    /// <summary>
+    /// The IdentityServerTools used to create the JWT.
+    /// </summary>
+    protected IIdentityServerTools Tools { get; }
+
+    /// <summary>
+    /// The ILogoutNotificationService to build the back channel logout requests.
+    /// </summary>
+    public ILogoutNotificationService LogoutNotificationService { get; }
+
+    /// <summary>
+    /// HttpClient to make the outbound HTTP calls.
+    /// </summary>
+    protected IBackChannelLogoutHttpClient HttpClient { get; }
+
+    /// <summary>
+    /// The logger.
+    /// </summary>
+    protected ILogger<IBackChannelLogoutService> Logger { get; }
+
+    /// <summary>
+    /// Ths issuer name service.
+    /// </summary>
+    protected IIssuerNameService IssuerNameService { get; }
+
+    /// <summary>
+    /// Constructor.
+    /// </summary>
+    /// <param name="clock"></param>
+    /// <param name="tools"></param>
+    /// <param name="logoutNotificationService"></param>
+    /// <param name="backChannelLogoutHttpClient"></param>
+    /// <param name="issuerNameService"></param>
+    /// <param name="logger"></param>
+    public DefaultBackChannelLogoutService(
+        IClock clock,
+        IIdentityServerTools tools,
+        ILogoutNotificationService logoutNotificationService,
+        IBackChannelLogoutHttpClient backChannelLogoutHttpClient,
+        IIssuerNameService issuerNameService,
+        ILogger<IBackChannelLogoutService> logger)
     {
-        /// <summary>
-        /// Default value for the back-channel JWT lifetime.
-        /// </summary>
-        protected const int DefaultLogoutTokenLifetime = 5 * 60;
+        Clock = clock;
+        Tools = tools;
+        LogoutNotificationService = logoutNotificationService;
+        HttpClient = backChannelLogoutHttpClient;
+        Logger = logger;
+        IssuerNameService = issuerNameService;
+    }
 
-        /// <summary>
-        /// The system clock;
-        /// </summary>
-        protected IClock Clock { get; }
-        
-        /// <summary>
-        /// The IdentityServerTools used to create and the JWT.
-        /// </summary>
-        protected IdentityServerTools Tools { get; }
+    /// <inheritdoc/>
+    public virtual async Task SendLogoutNotificationsAsync(LogoutNotificationContext context)
+    {
+        using var activity = Tracing.ServiceActivitySource.StartActivity("DefaultBackChannelLogoutService.SendLogoutNotifications");
 
-        /// <summary>
-        /// The ILogoutNotificationService to build the back channel logout requests.
-        /// </summary>
-        public ILogoutNotificationService LogoutNotificationService { get; }
-
-        /// <summary>
-        /// HttpClient to make the outbound HTTP calls.
-        /// </summary>
-        protected IBackChannelLogoutHttpClient HttpClient { get; }
-
-        /// <summary>
-        /// The logger.
-        /// </summary>
-        protected ILogger<IBackChannelLogoutService> Logger { get; }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="clock"></param>
-        /// <param name="tools"></param>
-        /// <param name="logoutNotificationService"></param>
-        /// <param name="backChannelLogoutHttpClient"></param>
-        /// <param name="logger"></param>
-        public DefaultBackChannelLogoutService(
-            IClock clock,
-            IdentityServerTools tools,
-            ILogoutNotificationService logoutNotificationService,
-            IBackChannelLogoutHttpClient backChannelLogoutHttpClient,
-            ILogger<IBackChannelLogoutService> logger)
+        var backChannelRequests = await LogoutNotificationService.GetBackChannelLogoutNotificationsAsync(context);
+        if (backChannelRequests.Any())
         {
-            Clock = clock;
-            Tools = tools;
-            LogoutNotificationService = logoutNotificationService;
-            HttpClient = backChannelLogoutHttpClient;
-            Logger = logger;
+            await SendLogoutNotificationsAsync(backChannelRequests);
+        }
+    }
+
+    /// <summary>
+    /// Sends the logout notifications for the collection of clients.
+    /// </summary>
+    /// <param name="requests"></param>
+    /// <returns></returns>
+    protected virtual Task SendLogoutNotificationsAsync(IEnumerable<BackChannelLogoutRequest> requests)
+    {
+        requests = requests ?? Enumerable.Empty<BackChannelLogoutRequest>();
+        var tasks = requests.Select(SendLogoutNotificationAsync).ToArray();
+        return Task.WhenAll(tasks);
+    }
+
+    /// <summary>
+    /// Performs the back-channel logout for a single client.
+    /// </summary>
+    /// <param name="request"></param>
+    protected virtual async Task SendLogoutNotificationAsync(BackChannelLogoutRequest request)
+    {
+        var data = await CreateFormPostPayloadAsync(request);
+        await PostLogoutJwt(request, data);
+    }
+
+    /// <summary>
+    /// Performs the HTTP POST of the logout payload to the client.
+    /// </summary>
+    /// <param name="client"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    protected virtual Task PostLogoutJwt(BackChannelLogoutRequest client, Dictionary<string, string> data)
+    {
+        return HttpClient.PostAsync(client.LogoutUri, data);
+    }
+
+    /// <summary>
+    /// Creates the form-url-encoded payload (as a dictionary) to send to the client.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    protected async Task<Dictionary<string, string>> CreateFormPostPayloadAsync(BackChannelLogoutRequest request)
+    {
+        var token = await CreateTokenAsync(request);
+
+        var data = new Dictionary<string, string>
+    {
+        { OidcConstants.BackChannelLogoutRequest.LogoutToken, token }
+    };
+        return data;
+    }
+
+    /// <summary>
+    /// Creates the JWT used for the back-channel logout notification.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns>The token.</returns>
+    protected virtual async Task<string> CreateTokenAsync(BackChannelLogoutRequest request)
+    {
+        var claims = await CreateClaimsForTokenAsync(request);
+        if (claims.Any(x => x.Type == JwtClaimTypes.Nonce))
+        {
+            throw new InvalidOperationException("nonce claim is not allowed in the back-channel signout token.");
         }
 
-        /// <inheritdoc/>
-        public virtual async Task SendLogoutNotificationsAsync(LogoutNotificationContext context)
+        if (request.Issuer != null)
         {
-            var backChannelRequests = await LogoutNotificationService.GetBackChannelLogoutNotificationsAsync(context);
-            if (backChannelRequests.Any())
-            {
-                await SendLogoutNotificationsAsync(backChannelRequests);
-            }
+            return await Tools.IssueJwtAsync(DefaultLogoutTokenLifetime, request.Issuer, IdentityServerConstants.TokenTypes.LogoutToken, claims);
         }
 
-        /// <summary>
-        /// Sends the logout notifications for the collection of clients.
-        /// </summary>
-        /// <param name="requests"></param>
-        /// <returns></returns>
-        protected virtual Task SendLogoutNotificationsAsync(IEnumerable<BackChannelLogoutRequest> requests)
+        var issuer = await IssuerNameService.GetCurrentAsync();
+        return await Tools.IssueJwtAsync(DefaultLogoutTokenLifetime, issuer, IdentityServerConstants.TokenTypes.LogoutToken, claims);
+    }
+
+    /// <summary>
+    /// Create the claims to be used in the back-channel logout token.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns>The claims to include in the token.</returns>
+    protected Task<IEnumerable<Claim>> CreateClaimsForTokenAsync(BackChannelLogoutRequest request)
+    {
+        if (request.SessionIdRequired && request.SessionId == null)
         {
-            requests = requests ?? Enumerable.Empty<BackChannelLogoutRequest>();
-            var tasks = requests.Select(SendLogoutNotificationAsync).ToArray();
-            return Task.WhenAll(tasks);
+            throw new ArgumentException("Client requires SessionId", nameof(request.SessionId));
+        }
+        if (request.SubjectId == null && request.SessionId == null)
+        {
+            throw new ArgumentException("Either a SubjectId or SessionId is required.");
         }
 
-        /// <summary>
-        /// Performs the back-channel logout for a single client.
-        /// </summary>
-        /// <param name="request"></param>
-        protected virtual async Task SendLogoutNotificationAsync(BackChannelLogoutRequest request)
+        var json = "{\"" + OidcConstants.Events.BackChannelLogout + "\":{} }";
+
+        var claims = new List<Claim>
+    {
+        new Claim(JwtClaimTypes.Audience, request.ClientId),
+        new Claim(JwtClaimTypes.JwtId, CryptoRandom.CreateUniqueId(16, CryptoRandom.OutputFormat.Hex)),
+        new Claim(JwtClaimTypes.Events, json, IdentityServerConstants.ClaimValueTypes.Json)
+    };
+
+        if (request.SubjectId != null)
         {
-            var data = await CreateFormPostPayloadAsync(request);
-            await PostLogoutJwt(request, data);
+            claims.Add(new Claim(JwtClaimTypes.Subject, request.SubjectId));
         }
 
-        /// <summary>
-        /// Performs the HTTP POST of the logout payload to the client.
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        protected virtual Task PostLogoutJwt(BackChannelLogoutRequest client, Dictionary<string, string> data)
+        if (request.SessionId != null)
         {
-            return HttpClient.PostAsync(client.LogoutUri, data);
+            claims.Add(new Claim(JwtClaimTypes.SessionId, request.SessionId));
         }
 
-        /// <summary>
-        /// Creates the form-url-encoded payload (as a dictionary) to send to the client.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        protected async Task<Dictionary<string, string>> CreateFormPostPayloadAsync(BackChannelLogoutRequest request)
+        var reason = request.LogoutReason switch
         {
-            var token = await CreateTokenAsync(request);
-
-            var data = new Dictionary<string, string>
-            {
-                { OidcConstants.BackChannelLogoutRequest.LogoutToken, token }
-            };
-            return data;
+            LogoutNotificationReason.UserLogout => IdentityServerConstants.BackChannelLogoutReasons.UserLogout,
+            LogoutNotificationReason.SessionExpiration => IdentityServerConstants.BackChannelLogoutReasons.SessionExpiration,
+            LogoutNotificationReason.Terminated => IdentityServerConstants.BackChannelLogoutReasons.Terminated,
+            _ => null,
+        };
+        if (reason != null)
+        {
+            claims.Add(new Claim(IdentityServerConstants.ClaimTypes.BackChannelLogoutReason, reason));
         }
 
-        /// <summary>
-        /// Creates the JWT used for the back-channel logout notification.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns>The token.</returns>
-        protected virtual async Task<string> CreateTokenAsync(BackChannelLogoutRequest request)
-        {
-            var claims = await CreateClaimsForTokenAsync(request);
-            if (claims.Any(x => x.Type == JwtClaimTypes.Nonce))
-            {
-                throw new InvalidOperationException("nonce claim is not allowed in the back-channel signout token.");
-            }
-
-            return await Tools.IssueJwtAsync(DefaultLogoutTokenLifetime, claims);
-        }
-
-        /// <summary>
-        /// Create the claims to be used in the back-channel logout token.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns>The claims to include in the token.</returns>
-        protected Task<IEnumerable<Claim>> CreateClaimsForTokenAsync(BackChannelLogoutRequest request)
-        {
-            if (request.SessionIdRequired && request.SessionId == null)
-            {
-                throw new ArgumentException("Client requires SessionId", nameof(request.SessionId));
-            }
-
-            var json = "{\"" + OidcConstants.Events.BackChannelLogout + "\":{} }";
-
-            var claims = new List<Claim>
-            {
-                new Claim(JwtClaimTypes.Subject, request.SubjectId),
-                new Claim(JwtClaimTypes.Audience, request.ClientId),
-                new Claim(JwtClaimTypes.IssuedAt, Clock.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new Claim(JwtClaimTypes.JwtId, CryptoRandom.CreateUniqueId(16, CryptoRandom.OutputFormat.Hex)),
-                new Claim(JwtClaimTypes.Events, json, IdentityServerConstants.ClaimValueTypes.Json)
-            };
-
-            if (request.SessionId != null)
-            {
-                claims.Add(new Claim(JwtClaimTypes.SessionId, request.SessionId));
-            }
-
-            return Task.FromResult(claims.AsEnumerable());
-        }
+        return Task.FromResult(claims.AsEnumerable());
     }
 }

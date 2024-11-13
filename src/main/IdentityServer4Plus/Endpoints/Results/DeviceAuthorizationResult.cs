@@ -9,42 +9,57 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// The result of device authorization
+/// </summary>
+public class DeviceAuthorizationResult : EndpointResult<DeviceAuthorizationResult>
 {
-    internal class DeviceAuthorizationResult : IEndpointResult
+    /// <summary>
+    /// The response
+    /// </summary>
+    public DeviceAuthorizationResponse Response { get; }
+
+    /// <summary>
+    /// Ctor
+    /// </summary>
+    /// <param name="response"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public DeviceAuthorizationResult(DeviceAuthorizationResponse response)
     {
-        public DeviceAuthorizationResponse Response { get; }
+        Response = response ?? throw new ArgumentNullException(nameof(response));
+    }
+}
 
-        public DeviceAuthorizationResult(DeviceAuthorizationResponse response)
+internal class DeviceAuthorizationHttpWriter : IHttpResponseWriter<DeviceAuthorizationResult>
+{
+    public async Task WriteHttpResponse(DeviceAuthorizationResult result, HttpContext context)
+    {
+        context.Response.SetNoCache();
+
+        var dto = new ResultDto
         {
-            Response = response ?? throw new ArgumentNullException(nameof(response));
-        }
+            device_code = result.Response.DeviceCode,
+            user_code = result.Response.UserCode,
+            verification_uri = result.Response.VerificationUri,
+            verification_uri_complete = result.Response.VerificationUriComplete,
+            expires_in = result.Response.DeviceCodeLifetime,
+            interval = result.Response.Interval
+        };
 
-        public async Task ExecuteAsync(HttpContext context)
-        {
-            context.Response.SetNoCache();
+        await context.Response.WriteJsonAsync(dto);
+    }
 
-            var dto = new ResultDto
-            {
-                device_code = Response.DeviceCode,
-                user_code = Response.UserCode,
-                verification_uri = Response.VerificationUri,
-                verification_uri_complete = Response.VerificationUriComplete,
-                expires_in = Response.DeviceCodeLifetime,
-                interval = Response.Interval
-            };
-
-            await context.Response.WriteJsonAsync(dto);
-        }
-
-        internal class ResultDto
-        {
-            public string device_code { get; set; }
-            public string user_code { get; set; }
-            public string verification_uri { get; set; }
-            public string verification_uri_complete { get; set; }
-            public int expires_in { get; set; }
-            public int interval { get; set; }
-        }
+    internal class ResultDto
+    {
+#pragma warning disable IDE1006 // Naming Styles
+        public string device_code { get; set; }
+        public string user_code { get; set; }
+        public string verification_uri { get; set; }
+        public string verification_uri_complete { get; set; }
+        public int expires_in { get; set; }
+        public int interval { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
     }
 }

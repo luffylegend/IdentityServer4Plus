@@ -1,67 +1,66 @@
-using Clients;
+﻿using Clients;
 using IdentityModel.Client;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace ConsoleResourceOwnerFlow
+namespace ConsoleResourceOwnerFlow;
+
+public class Program
 {
-    public class Program
+    static async Task Main()
     {
-        static async Task Main()
+        Console.Title = "Console ResourceOwner Flow";
+
+        var response = await RequestTokenAsync();
+        response.Show();
+
+        Console.ReadLine();
+        await CallServiceAsync(response.AccessToken);
+    }
+
+    static async Task<TokenResponse> RequestTokenAsync()
+    {
+        var client = new HttpClient();
+
+        var disco = await client.GetDiscoveryDocumentAsync(Constants.Authority);
+        if (disco.IsError) throw new Exception(disco.Error);
+
+        var response = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
-            Console.Title = "Console ResourceOwner Flow";
+            Address = disco.TokenEndpoint,
 
-            var response = await RequestTokenAsync();
-            response.Show();
+            ClientId = "roclient",
+            ClientSecret = "secret",
 
-            Console.ReadLine();
-            await CallServiceAsync(response.AccessToken);
-        }
+            UserName = "bob",
+            Password = "bob",
 
-        static async Task<TokenResponse> RequestTokenAsync()
-        {
-            var client = new HttpClient();
+            Scope = "resource1.scope1 resource2.scope1",
 
-            var disco = await client.GetDiscoveryDocumentAsync(Constants.Authority);
-            if (disco.IsError) throw new Exception(disco.Error);
-
-            var response = await client.RequestPasswordTokenAsync(new PasswordTokenRequest
+            Parameters =
             {
-                Address = disco.TokenEndpoint,
+                { "acr_values", "tenant:custom_account_store1 foo bar quux" }
+            }
+        });
 
-                ClientId = "roclient",
-                ClientSecret = "secret",
+        if (response.IsError) throw new Exception(response.Error);
+        return response;
+    }
 
-                UserName = "bob",
-                Password = "bob",
+    static async Task CallServiceAsync(string token)
+    {
+        var baseAddress = Constants.SampleApi;
 
-                Scope = "resource1.scope1 resource2.scope1",
-
-                Parameters =
-                {
-                    { "acr_values", "tenant:custom_account_store1 foo bar quux" }
-                }
-            });
-
-            if (response.IsError) throw new Exception(response.Error);
-            return response;
-        }
-
-        static async Task CallServiceAsync(string token)
+        var client = new HttpClient
         {
-            var baseAddress = Constants.SampleApi;
+            BaseAddress = new Uri(baseAddress)
+        };
 
-            var client = new HttpClient
-            {
-                BaseAddress = new Uri(baseAddress)
-            };
+        client.SetBearerToken(token);
+        var response = await client.GetStringAsync("identity");
 
-            client.SetBearerToken(token);
-            var response = await client.GetStringAsync("identity");
-
-            "\n\nService claims:".ConsoleGreen();
-            Console.WriteLine(response.PrettyPrintJson());
-        }
+        "\n\nService claims:".ConsoleGreen();
+        Console.WriteLine(response.PrettyPrintJson());
     }
 }

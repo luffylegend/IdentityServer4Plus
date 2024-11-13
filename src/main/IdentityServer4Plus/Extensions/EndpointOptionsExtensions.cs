@@ -1,30 +1,29 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
 using IdentityServer4.Configuration;
 using IdentityServer4.Hosting;
-using static IdentityServer4.Constants;
 
-namespace IdentityServer4.Extensions
+namespace IdentityServer4.Extensions;
+
+internal static class EndpointOptionsExtensions
 {
-    internal static class EndpointOptionsExtensions
+    public static bool IsEndpointEnabled(this EndpointsOptions options, Endpoint endpoint)
     {
-        public static bool IsEndpointEnabled(this EndpointsOptions options, Endpoint endpoint)
+        return endpoint?.Name switch
         {
-            return endpoint?.Name switch
-            {
-                EndpointNames.Authorize => options.EnableAuthorizeEndpoint,
-                EndpointNames.CheckSession => options.EnableCheckSessionEndpoint,
-                EndpointNames.DeviceAuthorization => options.EnableDeviceAuthorizationEndpoint,
-                EndpointNames.Discovery => options.EnableDiscoveryEndpoint,
-                EndpointNames.EndSession => options.EnableEndSessionEndpoint,
-                EndpointNames.Introspection => options.EnableIntrospectionEndpoint,
-                EndpointNames.Revocation => options.EnableTokenRevocationEndpoint,
-                EndpointNames.Token => options.EnableTokenEndpoint,
-                EndpointNames.UserInfo => options.EnableUserInfoEndpoint,
-                _ => true
-            };
-        }
+            IdentityServerConstants.EndpointNames.Authorize => options.EnableAuthorizeEndpoint,
+            IdentityServerConstants.EndpointNames.CheckSession => options.EnableCheckSessionEndpoint,
+            IdentityServerConstants.EndpointNames.DeviceAuthorization => options.EnableDeviceAuthorizationEndpoint,
+            IdentityServerConstants.EndpointNames.Discovery => options.EnableDiscoveryEndpoint,
+            IdentityServerConstants.EndpointNames.EndSession => options.EnableEndSessionEndpoint,
+            IdentityServerConstants.EndpointNames.Introspection => options.EnableIntrospectionEndpoint,
+            IdentityServerConstants.EndpointNames.Revocation => options.EnableTokenRevocationEndpoint,
+            IdentityServerConstants.EndpointNames.Token => options.EnableTokenEndpoint,
+            IdentityServerConstants.EndpointNames.UserInfo => options.EnableUserInfoEndpoint,
+            IdentityServerConstants.EndpointNames.PushedAuthorization => options.EnablePushedAuthorizationEndpoint,
+            _ => true
+        };
     }
 }

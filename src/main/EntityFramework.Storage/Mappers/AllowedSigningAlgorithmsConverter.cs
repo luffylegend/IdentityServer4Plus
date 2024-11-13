@@ -2,40 +2,34 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using AutoMapper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace IdentityServer4.EntityFramework.Mappers
+namespace IdentityServer4.EntityFramework.Mappers;
+
+internal static class AllowedSigningAlgorithmsConverter
 {
-    class AllowedSigningAlgorithmsConverter : 
-        IValueConverter<ICollection<string>, string>,
-        IValueConverter<string, ICollection<string>>
+    public static string Convert(ICollection<string> sourceMember)
     {
-        public static AllowedSigningAlgorithmsConverter Converter = new AllowedSigningAlgorithmsConverter();
-
-        public string Convert(ICollection<string> sourceMember, ResolutionContext context)
+        if (sourceMember == null || !sourceMember.Any())
         {
-            if (sourceMember == null || !sourceMember.Any())
-            {
-                return null;
-            }
-            return sourceMember.Aggregate((x, y) => $"{x},{y}");
+            return null;
         }
+        return sourceMember.Aggregate((x, y) => $"{x},{y}");
+    }
 
-        public ICollection<string> Convert(string sourceMember, ResolutionContext context)
+    public static ICollection<string> Convert(string sourceMember)
+    {
+        var list = new HashSet<string>();
+        if (!String.IsNullOrWhiteSpace(sourceMember))
         {
-            var list = new HashSet<string>();
-            if (!String.IsNullOrWhiteSpace(sourceMember))
+            sourceMember = sourceMember.Trim();
+            foreach (var item in sourceMember.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Distinct())
             {
-                sourceMember = sourceMember.Trim();
-                foreach (var item in sourceMember.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Distinct())
-                {
-                    list.Add(item);
-                }
+                list.Add(item);
             }
-            return list;
         }
+        return list;
     }
 }

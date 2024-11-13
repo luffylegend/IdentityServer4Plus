@@ -2,29 +2,54 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using FluentAssertions;
 using IdentityServer4.EntityFramework.Mappers;
-using IdentityServer4.Models;
 using Xunit;
+using Entities = IdentityServer4.EntityFramework.Entities;
+using Models = IdentityServer4.Models;
 
-namespace IdentityServer4.EntityFramework.UnitTests.Mappers
+namespace EntityFramework.Storage.UnitTests.Mappers;
+
+public class IdentityResourcesMappersTests
 {
-    public class IdentityResourcesMappersTests
+    [Fact]
+    public void CanMapIdentityResources()
     {
-        [Fact]
-        public void IdentityResourceAutomapperConfigurationIsValid()
-        {
-            IdentityResourceMappers.Mapper.ConfigurationProvider.AssertConfigurationIsValid();
-        }
+        var model = new Models.IdentityResource();
+        var mappedEntity = model.ToEntity();
+        var mappedModel = mappedEntity.ToModel();
 
-        [Fact]
-        public void CanMapIdentityResources()
-        {
-            var model = new IdentityResource();
-            var mappedEntity = model.ToEntity();
-            var mappedModel = mappedEntity.ToModel();
+        Assert.NotNull(mappedModel);
+        Assert.NotNull(mappedEntity);
+    }
 
-            Assert.NotNull(mappedModel);
-            Assert.NotNull(mappedEntity);
-        }
+    [Fact]
+    public void mapping_model_to_entity_maps_all_properties()
+    {
+        var excludedProperties = new string[]
+        {
+        "Id",
+        "Updated",
+        "NonEditable"
+        };
+
+        MapperTestHelpers
+            .AllPropertiesAreMapped<Models.IdentityResource, Entities.IdentityResource>(
+                source => source.ToEntity(),
+                excludedProperties,
+                out var unmappedMembers)
+            .Should()
+            .BeTrue($"{string.Join(',', unmappedMembers)} should be mapped");
+    }
+
+    [Fact]
+    public void mapping_entity_to_model_maps_all_properties()
+    {
+        MapperTestHelpers
+            .AllPropertiesAreMapped<Entities.IdentityResource, Models.IdentityResource>(
+                source => source.ToModel(),
+                out var unmappedMembers)
+            .Should()
+            .BeTrue($"{string.Join(',', unmappedMembers)} should be mapped");
     }
 }

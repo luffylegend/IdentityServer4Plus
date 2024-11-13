@@ -2,54 +2,63 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using IdentityModel;
 using IdentityServer4.Extensions;
 using IdentityServer4.Validation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace IdentityServer4.Logging.Models
+namespace IdentityServer4.Logging.Models;
+
+internal class TokenRequestValidationLog
 {
-    internal class TokenRequestValidationLog
+    public string ClientId { get; set; }
+    public string ClientName { get; set; }
+    public string GrantType { get; set; }
+    public string Scopes { get; set; }
+
+    public string AuthorizationCode { get; set; }
+    public string RefreshToken { get; set; }
+
+    public string UserName { get; set; }
+    public IEnumerable<string> AuthenticationContextReferenceClasses { get; set; }
+    public string Tenant { get; set; }
+    public string IdP { get; set; }
+
+    public Dictionary<string, string> Raw { get; set; }
+
+    public TokenRequestValidationLog(ValidatedTokenRequest request, IEnumerable<string> sensitiveValuesFilter)
     {
-        public string ClientId { get; set; }
-        public string ClientName { get; set; }
-        public string GrantType { get; set; }
-        public string Scopes { get; set; }
+        Raw = request.Raw.ToScrubbedDictionary(sensitiveValuesFilter.ToArray());
 
-        public string AuthorizationCode { get; set; }
-        public string RefreshToken { get; set; }
-
-        public string UserName { get; set; }
-        public IEnumerable<string> AuthenticationContextReferenceClasses { get; set; }
-        public string Tenant { get; set; }
-        public string IdP { get; set; }
-
-        public Dictionary<string, string> Raw { get; set; }
-
-        public TokenRequestValidationLog(ValidatedTokenRequest request, IEnumerable<string> sensitiveValuesFilter)
+        if (request.Client != null)
         {
-            Raw = request.Raw.ToScrubbedDictionary(sensitiveValuesFilter.ToArray());
+            ClientId = request.Client.ClientId;
+            ClientName = request.Client.ClientName;
+        }
 
-            if (request.Client != null)
-            {
-                ClientId = request.Client.ClientId;
-                ClientName = request.Client.ClientName;
-            }
+        if (request.RequestedScopes != null)
+        {
+            Scopes = request.RequestedScopes.ToSpaceSeparatedString();
+        }
 
-            if (request.RequestedScopes != null)
-            {
-                Scopes = request.RequestedScopes.ToSpaceSeparatedString();
-            }
+        GrantType = request.GrantType;
+        AuthorizationCode = request.AuthorizationCodeHandle.Obfuscate();
+        RefreshToken = request.RefreshTokenHandle.Obfuscate();
 
-            GrantType = request.GrantType;
-            AuthorizationCode = request.AuthorizationCodeHandle.Obfuscate();
-            RefreshToken = request.RefreshTokenHandle.Obfuscate();
+        if (!sensitiveValuesFilter.Contains(OidcConstants.TokenRequest.UserName, StringComparer.OrdinalIgnoreCase))
+        {
             UserName = request.UserName;
         }
-
-        public override string ToString()
+        else if (request.UserName.IsPresent())
         {
-            return LogSerializer.Serialize(this);
+            UserName = "***REDACTED***";
         }
+    }
+
+    public override string ToString()
+    {
+        return LogSerializer.Serialize(this);
     }
 }

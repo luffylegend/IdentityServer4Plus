@@ -6,8 +6,25 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="System.Drawing.Common" />
       
     <ProjectReference Include="..\..\main\EntityFramework\IdentityServer4Plus.EntityFramework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Compile Include="..\..\hosts\Config\Clients.cs">
+		<Link>Configuration\Clients.cs</Link>
+	</Compile>
+	<Compile Include="..\..\hosts\Config\ClientsConsole.cs">
+		<Link>Configuration\ClientsConsole.cs</Link>
+	</Compile>
+	<Compile Include="..\..\hosts\Config\ClientsWeb.cs">
+		<Link>Configuration\ClientsWeb.cs</Link>
+	</Compile>
+	<Compile Include="..\..\hosts\Config\Resources.cs">
+		<Link>Configuration\Resources.cs</Link>
+	</Compile>
   </ItemGroup>
 
 </Project>

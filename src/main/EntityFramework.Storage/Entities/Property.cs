@@ -4,12 +4,11 @@
 
 #pragma warning disable 1591
 
-namespace IdentityServer4.EntityFramework.Entities
+namespace IdentityServer4.EntityFramework.Entities;
+
+public abstract class Property
 {
-    public abstract class Property
-    {
-        public int Id { get; set; }
-        public string Key { get; set; }
-        public string Value { get; set; }
-    }
+    public int Id { get; set; }
+    public string Key { get; set; }
+    public string Value { get; set; }
 }

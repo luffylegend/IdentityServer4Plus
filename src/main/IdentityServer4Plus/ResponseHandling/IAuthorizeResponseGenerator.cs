@@ -5,18 +5,17 @@
 using IdentityServer4.Validation;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.ResponseHandling
+namespace IdentityServer4.ResponseHandling;
+
+/// <summary>
+/// Interface for the authorize response generator
+/// </summary>
+public interface IAuthorizeResponseGenerator
 {
     /// <summary>
-    /// Interface for the authorize response generator
+    /// Creates the response
     /// </summary>
-    public interface IAuthorizeResponseGenerator
-    {
-        /// <summary>
-        /// Creates the response
-        /// </summary>
-        /// <param name="request">The request.</param>
-        /// <returns></returns>
-        Task<AuthorizeResponse> CreateResponseAsync(ValidatedAuthorizeRequest request);
-    }
+    /// <param name="request">The request.</param>
+    /// <returns></returns>
+    Task<AuthorizeResponse> CreateResponseAsync(ValidatedAuthorizeRequest request);
 }

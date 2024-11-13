@@ -4,6 +4,7 @@
 
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
+using IdentityServer4.Services.KeyManagement;
 using IdentityServer4.Stores;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -11,74 +12,118 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Services
+namespace IdentityServer4.Services;
+
+/// <summary>
+/// The default key material service
+/// </summary>
+/// <seealso cref="IKeyMaterialService" />
+public class DefaultKeyMaterialService : IKeyMaterialService
 {
+    private readonly IEnumerable<IValidationKeysStore> _validationKeysStores;
+    private readonly IEnumerable<ISigningCredentialStore> _signingCredentialStores;
+    private readonly IAutomaticKeyManagerKeyStore _keyManagerKeyStore;
+
     /// <summary>
-    /// The default key material service
+    /// Initializes a new instance of the <see cref="DefaultKeyMaterialService"/> class.
     /// </summary>
-    /// <seealso cref="IdentityServer4.Services.IKeyMaterialService" />
-    public class DefaultKeyMaterialService : IKeyMaterialService
+    /// <param name="validationKeysStores">The validation keys stores.</param>
+    /// <param name="signingCredentialStores">The signing credential store.</param>
+    /// <param name="keyManagerKeyStore">The store for automatic key management.</param>
+    public DefaultKeyMaterialService(
+        IEnumerable<IValidationKeysStore> validationKeysStores,
+        IEnumerable<ISigningCredentialStore> signingCredentialStores,
+        IAutomaticKeyManagerKeyStore keyManagerKeyStore)
     {
-        private readonly IEnumerable<ISigningCredentialStore> _signingCredentialStores;
-        private readonly IEnumerable<IValidationKeysStore> _validationKeysStores;
+        _validationKeysStores = validationKeysStores;
+        _signingCredentialStores = signingCredentialStores;
+        _keyManagerKeyStore = keyManagerKeyStore;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultKeyMaterialService"/> class.
-        /// </summary>
-        /// <param name="validationKeysStores">The validation keys stores.</param>
-        /// <param name="signingCredentialStores">The signing credential store.</param>
-        public DefaultKeyMaterialService(IEnumerable<IValidationKeysStore> validationKeysStores, IEnumerable<ISigningCredentialStore> signingCredentialStores)
-        {
-            _signingCredentialStores = signingCredentialStores;
-            _validationKeysStores = validationKeysStores;
-        }
+    /// <inheritdoc/>
+    public async Task<SigningCredentials> GetSigningCredentialsAsync(IEnumerable<string> allowedAlgorithms = null)
+    {
+        using var activity = Tracing.ServiceActivitySource.StartActivity("DefaultKeyMaterialService.GetSigningCredentials");
 
-        /// <inheritdoc/>
-        public async Task<SigningCredentials> GetSigningCredentialsAsync(IEnumerable<string> allowedAlgorithms = null)
+        if (IEnumerableExtensions.IsNullOrEmpty(allowedAlgorithms))
         {
-            if (_signingCredentialStores.Any())
+            var list = _signingCredentialStores.ToList();
+            for (var i = 0; i < list.Count; i++)
             {
-                if (allowedAlgorithms.IsNullOrEmpty())
+                var key = await list[i].GetSigningCredentialsAsync();
+                if (key != null)
                 {
-                    return await _signingCredentialStores.First().GetSigningCredentialsAsync();
+                    return key;
                 }
-
-                var credential = (await GetAllSigningCredentialsAsync()).FirstOrDefault(c => allowedAlgorithms.Contains(c.Algorithm));
-                if (credential is null)
-                {
-                    throw new InvalidOperationException($"No signing credential for algorithms ({allowedAlgorithms.ToSpaceSeparatedString()}) registered.");
-                }
-
-                return credential;
             }
 
-            return null;
-        }
-
-        /// <inheritdoc/>
-        public async Task<IEnumerable<SigningCredentials>> GetAllSigningCredentialsAsync()
-        {
-            var credentials = new List<SigningCredentials>();
-
-            foreach (var store in _signingCredentialStores)
+            var automaticKey = await _keyManagerKeyStore.GetSigningCredentialsAsync();
+            if (automaticKey != null)
             {
-                credentials.Add(await store.GetSigningCredentialsAsync());
+                return automaticKey;
             }
 
-            return credentials;
+            throw new InvalidOperationException($"No signing credential registered.");
         }
 
-        /// <inheritdoc/>
-        public async Task<IEnumerable<SecurityKeyInfo>> GetValidationKeysAsync()
+        var credential =
+            (await GetAllSigningCredentialsAsync()).FirstOrDefault(c => allowedAlgorithms.Contains(c.Algorithm));
+        if (credential is null)
         {
-            var keys = new List<SecurityKeyInfo>();
-
-            foreach (var store in _validationKeysStores)
-            {
-                keys.AddRange(await store.GetValidationKeysAsync());
-            }
-
-            return keys;
+            throw new InvalidOperationException(
+                $"No signing credential for algorithms ({allowedAlgorithms.ToSpaceSeparatedString()}) registered.");
         }
+
+        return credential;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<SigningCredentials>> GetAllSigningCredentialsAsync()
+    {
+        using var activity = Tracing.ServiceActivitySource.StartActivity("DefaultKeyMaterialService.GetAllSigningCredentials");
+
+        var credentials = new List<SigningCredentials>();
+
+        foreach (var store in _signingCredentialStores)
+        {
+            var signingKey = await store.GetSigningCredentialsAsync();
+            if (signingKey != null)
+            {
+                credentials.Add(signingKey);
+            }
+        }
+
+        var automaticSigningKeys = await _keyManagerKeyStore.GetAllSigningCredentialsAsync();
+        if (automaticSigningKeys != null)
+        {
+            credentials.AddRange(automaticSigningKeys);
+        }
+
+        return credentials;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IEnumerable<SecurityKeyInfo>> GetValidationKeysAsync()
+    {
+        using var activity = Tracing.ServiceActivitySource.StartActivity("DefaultKeyMaterialService.GetValidationKeys");
+
+        var keys = new List<SecurityKeyInfo>();
+
+        var automaticSigningKeys = await _keyManagerKeyStore.GetValidationKeysAsync();
+        if (automaticSigningKeys?.Any() == true)
+        {
+            keys.AddRange(automaticSigningKeys);
+        }
+
+        foreach (var store in _validationKeysStores)
+        {
+            var validationKeys = await store.GetValidationKeysAsync();
+            if (validationKeys.Any())
+            {
+                keys.AddRange(validationKeys);
+            }
+        }
+
+        return keys;
     }
 }

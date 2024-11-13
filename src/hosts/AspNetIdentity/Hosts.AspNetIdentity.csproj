@@ -1,22 +1,52 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <RootNamespace>IdentityServerHost</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AnalysisMode>all</AnalysisMode>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog" Version="4.0.1" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <!--<PackageReference Include="Serilog" Version="4.0.1" />-->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <!--<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />-->
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
-    <PackageReference Include="System.Security.Principal.Windows" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
+    <!--<PackageReference Include="System.Security.Principal.Windows" />-->
+
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" />
+    <PackageReference Include="System.Drawing.Common" />
     
     <ProjectReference Include="..\..\main\AspNetIdentity\IdentityServer4Plus.AspNetIdentity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<Compile Include="..\Config\Clients.cs">
+		<Link>Configuration\Clients.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\ClientsConsole.cs">
+		<Link>Configuration\ClientsConsole.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\ClientsWeb.cs">
+		<Link>Configuration\ClientsWeb.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\Resources.cs">
+		<Link>Configuration\Resources.cs</Link>
+	</Compile>
   </ItemGroup>
 
 </Project>

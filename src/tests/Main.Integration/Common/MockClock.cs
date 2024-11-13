@@ -1,10 +1,13 @@
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
+
+
 using IdentityServer4;
 using System;
 
-namespace IntegrationTests.Common
+namespace IntegrationTests.Common;
+
+class MockClock : IClock
 {
-    class MockClock : IClock
-    {
-        public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.UtcNow;
-    }
+    public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.UtcNow;
 }

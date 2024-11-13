@@ -1,76 +1,75 @@
-using Clients;
+﻿using Clients;
 using IdentityModel.Client;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace ConsoleCustomGrant
+namespace ConsoleCustomGrant;
+
+class Program
 {
-    class Program
+    static IDiscoveryCache _cache = new DiscoveryCache(Constants.Authority);
+
+    static async Task Main()
     {
-        static IDiscoveryCache _cache = new DiscoveryCache(Constants.Authority);
+        Console.Title = "Console Custom Grant";
 
-        static async Task Main()
+        // custom grant type with subject support
+        var response = await RequestTokenAsync("custom");
+        response.Show();
+
+        Console.ReadLine();
+        await CallServiceAsync(response.AccessToken);
+
+        Console.ReadLine();
+
+        // custom grant type without subject support
+        response = await RequestTokenAsync("custom.nosubject");
+        response.Show();
+
+        Console.ReadLine();
+        await CallServiceAsync(response.AccessToken);
+    }
+
+    static async Task<TokenResponse> RequestTokenAsync(string grantType)
+    {
+        var client = new HttpClient();
+
+        var disco = await _cache.GetAsync();
+        if (disco.IsError) throw new Exception(disco.Error);
+
+        var response = await client.RequestTokenAsync(new TokenRequest
         {
-            Console.Title = "Console Custom Grant";
+            Address = disco.TokenEndpoint,
+            GrantType = grantType,
 
-            // custom grant type with subject support
-            var response = await RequestTokenAsync("custom");
-            response.Show();
+            ClientId = "client.custom",
+            ClientSecret = "secret",
 
-            Console.ReadLine();
-            await CallServiceAsync(response.AccessToken);
-
-            Console.ReadLine();
-
-            // custom grant type without subject support
-            response = await RequestTokenAsync("custom.nosubject");
-            response.Show();
-
-            Console.ReadLine();
-            await CallServiceAsync(response.AccessToken);
-        }
-
-        static async Task<TokenResponse> RequestTokenAsync(string grantType)
-        {
-            var client = new HttpClient();
-
-            var disco = await _cache.GetAsync();
-            if (disco.IsError) throw new Exception(disco.Error);
-
-            var response = await client.RequestTokenAsync(new TokenRequest
+            Parameters =
             {
-                Address = disco.TokenEndpoint,
-                GrantType = grantType,
+                { "scope", "resource1.scope1" },
+                { "custom_credential", "custom credential"}
+            }
+        });
 
-                ClientId = "client.custom",
-                ClientSecret = "secret",
+        if (response.IsError) throw new Exception(response.Error);
+        return response;
+    }
 
-                Parameters =
-                {
-                    { "scope", "resource1.scope1" },
-                    { "custom_credential", "custom credential"}
-                }
-            });
+    static async Task CallServiceAsync(string token)
+    {
+        var baseAddress = Constants.SampleApi;
 
-            if (response.IsError) throw new Exception(response.Error);
-            return response;
-        }
-
-        static async Task CallServiceAsync(string token)
+        var client = new HttpClient
         {
-            var baseAddress = Constants.SampleApi;
+            BaseAddress = new Uri(baseAddress)
+        };
 
-            var client = new HttpClient
-            {
-                BaseAddress = new Uri(baseAddress)
-            };
+        client.SetBearerToken(token);
+        var response = await client.GetStringAsync("identity");
 
-            client.SetBearerToken(token);
-            var response = await client.GetStringAsync("identity");
-
-            "\n\nService claims:".ConsoleGreen();
-            Console.WriteLine(response.PrettyPrintJson());
-        }
+        "\n\nService claims:".ConsoleGreen();
+        Console.WriteLine(response.PrettyPrintJson());
     }
 }

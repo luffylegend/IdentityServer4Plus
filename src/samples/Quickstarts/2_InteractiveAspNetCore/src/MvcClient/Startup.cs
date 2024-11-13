@@ -4,56 +4,55 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.IdentityModel.Tokens.Jwt;
 
-namespace MvcClient
+namespace MvcClient;
+
+public class Startup
 {
-    public class Startup
+    public void ConfigureServices(IServiceCollection services)
     {
-        public void ConfigureServices(IServiceCollection services)
+        services.AddControllersWithViews();
+
+        JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+
+        services.AddAuthentication(options =>
         {
-            services.AddControllersWithViews();
+            options.DefaultScheme = "Cookies";
+            options.DefaultChallengeScheme = "oidc";
+        })
+        .AddCookie("Cookies")
+        .AddOpenIdConnect("oidc", options =>
+        {
+            options.Authority = "https://localhost:5001";
 
-            JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+            options.ClientId = "mvc";
+            options.ClientSecret = "secret";
+            options.ResponseType = "code";
 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = "Cookies";
-                options.DefaultChallengeScheme = "oidc";
-            })
-            .AddCookie("Cookies")
-            .AddOpenIdConnect("oidc", options =>
-            {
-                options.Authority = "https://localhost:5001";
+            options.SaveTokens = true;
+        });
+    }
 
-                options.ClientId = "mvc";
-                options.ClientSecret = "secret";
-                options.ResponseType = "code";
-
-                options.SaveTokens = true;
-            });
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+        else
+        {
+            app.UseExceptionHandler("/Home/Error");
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        app.UseStaticFiles();
+
+        app.UseRouting();
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Home/Error");
-            }
-
-            app.UseStaticFiles();
-
-            app.UseRouting();
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapDefaultControllerRoute()
-                    .RequireAuthorization();
-            });
-        }
+            endpoints.MapDefaultControllerRoute()
+                .RequireAuthorization();
+        });
     }
 }

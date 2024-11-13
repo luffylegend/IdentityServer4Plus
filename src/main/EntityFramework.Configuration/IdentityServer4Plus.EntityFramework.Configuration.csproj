@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>IdentityServer4Plus.EntityFramework.Configuration</PackageId>
+        <TargetFrameworks>net8.0</TargetFrameworks>
+        <Description>EntityFramework Configuration system for IdentityServer4</Description>
+        <AssemblyName>IdentityServer4Plus.EntityFramework.Configuration</AssemblyName>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <!-- strong naming fml -->
+        <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
+        <SignAssembly>true</SignAssembly>
+        <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Configuration\IdentityServer4Plus.Configuration.csproj" />
+        <ProjectReference Include="..\Storage\IdentityServer4Plus.Storage.csproj" />
+        <ProjectReference Include="..\EntityFramework.Storage\IdentityServer4Plus.EntityFramework.Storage.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+        <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    </ItemGroup>
+</Project>

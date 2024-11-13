@@ -12,47 +12,67 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// Models a token result
+/// </summary>
+public class TokenResult : EndpointResult<TokenResult>
 {
-    internal class TokenResult : IEndpointResult
+    /// <summary>
+    /// The response
+    /// </summary>
+    public TokenResponse Response { get; }
+
+    /// <summary>
+    /// Ctor
+    /// </summary>
+    /// <param name="response"></param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public TokenResult(TokenResponse response)
     {
-        public TokenResponse Response { get; set; }
+        Response = response ?? throw new ArgumentNullException(nameof(response));
+    }
+}
 
-        public TokenResult(TokenResponse response)
+internal class TokenHttpWriter : IHttpResponseWriter<TokenResult>
+{
+    public async Task WriteHttpResponse(TokenResult result, HttpContext context)
+    {
+        context.Response.SetNoCache();
+
+        if (result.Response.DPoPNonce.IsPresent())
         {
-            Response = response ?? throw new ArgumentNullException(nameof(response));
+            context.Response.Headers[OidcConstants.HttpHeaders.DPoPNonce] = result.Response.DPoPNonce;
         }
 
-        public async Task ExecuteAsync(HttpContext context)
+        var dto = new ResultDto
         {
-            context.Response.SetNoCache();
+            id_token = result.Response.IdentityToken,
+            access_token = result.Response.AccessToken,
+            refresh_token = result.Response.RefreshToken,
+            expires_in = result.Response.AccessTokenLifetime,
+            token_type = result.Response.AccessTokenType,
+            scope = result.Response.Scope,
 
-            var dto = new ResultDto
-            {
-                id_token = Response.IdentityToken,
-                access_token = Response.AccessToken,
-                refresh_token = Response.RefreshToken,
-                expires_in = Response.AccessTokenLifetime,
-                token_type = OidcConstants.TokenResponse.BearerTokenType,
-                scope = Response.Scope,
-                
-                Custom = Response.Custom
-            };
+            Custom = result.Response.Custom
+        };
 
-            await context.Response.WriteJsonAsync(dto);
-        }
+        await context.Response.WriteJsonAsync(dto);
+    }
 
-        internal class ResultDto
-        {
-            public string id_token { get; set; }
-            public string access_token { get; set; }
-            public int expires_in { get; set; }
-            public string token_type { get; set; }
-            public string refresh_token { get; set; }
-            public string scope { get; set; }
+    internal class ResultDto
+    {
+#pragma warning disable IDE1006 // Naming Styles
+        public string id_token { get; set; }
+        public string access_token { get; set; }
+        public int expires_in { get; set; }
+        public string token_type { get; set; }
+        public string refresh_token { get; set; }
+        public string scope { get; set; }
 
-            [JsonExtensionData]
-            public Dictionary<string, object> Custom { get; set; }
-        }
+        [JsonExtensionData]
+        public Dictionary<string, object> Custom { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
     }
 }

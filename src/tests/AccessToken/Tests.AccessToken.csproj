@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer"/>
+        <PackageReference Include="Microsoft.AspNetCore.TestHost"/>
+        
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+        <PackageReference Include="xunit" Version="2.9.0" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="6.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        
+        <PackageReference Include="RichardSzalay.MockHttp" Version="7.0.0" />
+        <PackageReference Include="Shouldly" Version="4.2.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- TODO - Replace CsQuery with AngleSharp -->
+        <PackageReference Include="CsQuery.NETStandard" Version="1.3.6.1" />
+
+        <!-- TODO - The rest of the packages in this group are transitive
+        dependencies of CsQuery. We should remove them when we replace CsQuery
+        with AngleSharp. -->
+        <PackageReference Include="Microsoft.NETCore.Jit" Version="2.0.8" />
+        <PackageReference Include="System.Net.Http" Version="4.3.4" />
+        <PackageReference Include="System.Security.Cryptography.X509Certificates" Version="4.3.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\main\IdentityServer4Plus\IdentityServer4Plus.csproj" />
+      <ProjectReference Include="..\..\main\AccessToken.OpenIdConnect\IdentityServer4Plus.AccessToken.OpenIdConnect.csproj" />
+      <ProjectReference Include="..\..\main\AccessToken\IdentityServer4Plus.AccessToken.csproj" />
+    </ItemGroup>
+
+</Project>

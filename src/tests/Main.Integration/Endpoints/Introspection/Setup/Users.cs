@@ -5,21 +5,20 @@
 using IdentityServer4.Test;
 using System.Collections.Generic;
 
-namespace IdentityServer.IntegrationTests.Endpoints.Introspection.Setup
+namespace IntegrationTests.Endpoints.Introspection.Setup;
+
+public static class Users
 {
-    public static class Users
+    public static List<TestUser> Get()
     {
-        public static List<TestUser> Get()
+        return new List<TestUser>
+    {
+        new TestUser
         {
-            return new List<TestUser>
-            {
-                new TestUser
-                {
-                    SubjectId = "1",
-                    Username = "bob",
-                    Password = "bob"
-                }
-            };
+            SubjectId = "1",
+            Username = "bob",
+            Password = "bob"
         }
+    };
     }
 }

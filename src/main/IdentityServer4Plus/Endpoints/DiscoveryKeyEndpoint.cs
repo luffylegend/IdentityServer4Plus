@@ -1,6 +1,7 @@
 // Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
+
 using IdentityServer4.Configuration;
 using IdentityServer4.Endpoints.Results;
 using IdentityServer4.Hosting;
@@ -10,50 +11,51 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints
+namespace IdentityServer4.Endpoints;
+
+internal class DiscoveryKeyEndpoint : IEndpointHandler
 {
-    internal class DiscoveryKeyEndpoint : IEndpointHandler
+    private readonly ILogger _logger;
+
+    private readonly IdentityServerOptions _options;
+
+    private readonly IDiscoveryResponseGenerator _responseGenerator;
+
+    public DiscoveryKeyEndpoint(
+        IdentityServerOptions options,
+        IDiscoveryResponseGenerator responseGenerator,
+        ILogger<DiscoveryKeyEndpoint> logger)
     {
-        private readonly ILogger _logger;
+        _logger = logger;
+        _options = options;
+        _responseGenerator = responseGenerator;
+    }
 
-        private readonly IdentityServerOptions _options;
+    public async Task<IEndpointResult> ProcessAsync(HttpContext context)
+    {
+        using var activity = Tracing.BasicActivitySource.StartActivity(IdentityServerConstants.EndpointNames.Discovery + "Endpoint");
 
-        private readonly IDiscoveryResponseGenerator _responseGenerator;
+        _logger.LogTrace("Processing discovery request.");
 
-        public DiscoveryKeyEndpoint(
-            IdentityServerOptions options,
-            IDiscoveryResponseGenerator responseGenerator,
-            ILogger<DiscoveryKeyEndpoint> logger)
+        // validate HTTP
+        if (!HttpMethods.IsGet(context.Request.Method))
         {
-            _logger = logger;
-            _options = options;
-            _responseGenerator = responseGenerator;
+            _logger.LogWarning("Discovery endpoint only supports GET requests");
+            return new StatusCodeResult(HttpStatusCode.MethodNotAllowed);
         }
 
-        public async Task<IEndpointResult> ProcessAsync(HttpContext context)
+        _logger.LogDebug("Start key discovery request");
+
+        if (_options.Discovery.ShowKeySet == false)
         {
-            _logger.LogTrace("Processing discovery request.");
-
-            // validate HTTP
-            if (!HttpMethods.IsGet(context.Request.Method))
-            {
-                _logger.LogWarning("Discovery endpoint only supports GET requests");
-                return new StatusCodeResult(HttpStatusCode.MethodNotAllowed);
-            }
-
-            _logger.LogDebug("Start key discovery request");
-
-            if (_options.Discovery.ShowKeySet == false)
-            {
-                _logger.LogInformation("Key discovery disabled. 404.");
-                return new StatusCodeResult(HttpStatusCode.NotFound);
-            }
-
-            // generate response
-            _logger.LogTrace("Calling into discovery response generator: {type}", _responseGenerator.GetType().FullName);
-            var response = await _responseGenerator.CreateJwkDocumentAsync();
-
-            return new JsonWebKeysResult(response, _options.Discovery.ResponseCacheInterval);
+            _logger.LogInformation("Key discovery disabled. 404.");
+            return new StatusCodeResult(HttpStatusCode.NotFound);
         }
+
+        // generate response
+        _logger.LogTrace("Calling into discovery response generator: {type}", _responseGenerator.GetType().FullName);
+        var response = await _responseGenerator.CreateJwkDocumentAsync();
+
+        return new JsonWebKeysResult(response, _options.Discovery.ResponseCacheInterval);
     }
 }

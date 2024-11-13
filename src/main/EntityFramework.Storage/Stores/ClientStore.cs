@@ -2,77 +2,87 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using IdentityServer4.EntityFramework.Interfaces;
-using IdentityServer4.EntityFramework.Mappers;
-using IdentityServer4.Models;
-using IdentityServer4.Stores;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using IdentityServer4.EntityFramework.Interfaces;
+using IdentityServer4.EntityFramework.Mappers;
+using IdentityServer4.Services;
+using IdentityServer4.Stores;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace IdentityServer4.EntityFramework.Stores
+namespace IdentityServer4.EntityFramework.Stores;
+
+/// <summary>
+/// Implementation of IClientStore thats uses EF.
+/// </summary>
+/// <seealso cref="IClientStore" />
+public class ClientStore : IClientStore
 {
     /// <summary>
-    /// Implementation of IClientStore thats uses EF.
+    /// The DbContext.
     /// </summary>
-    /// <seealso cref="IdentityServer4.Stores.IClientStore" />
-    public class ClientStore : IClientStore
+    protected readonly IConfigurationDbContext Context;
+
+    /// <summary>
+    /// The CancellationToken provider.
+    /// </summary>
+    protected readonly ICancellationTokenProvider CancellationTokenProvider;
+
+    /// <summary>
+    /// The logger.
+    /// </summary>
+    protected readonly ILogger<ClientStore> Logger;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ClientStore"/> class.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="cancellationTokenProvider"></param>
+    /// <exception cref="ArgumentNullException">context</exception>
+    public ClientStore(IConfigurationDbContext context, ILogger<ClientStore> logger, ICancellationTokenProvider cancellationTokenProvider)
     {
-        /// <summary>
-        /// The DbContext.
-        /// </summary>
-        protected readonly IConfigurationDbContext Context;
+        Context = context ?? throw new ArgumentNullException(nameof(context));
+        Logger = logger;
+        CancellationTokenProvider = cancellationTokenProvider;
+    }
 
-        /// <summary>
-        /// The logger.
-        /// </summary>
-        protected readonly ILogger<ClientStore> Logger;
+    /// <summary>
+    /// Finds a client by id
+    /// </summary>
+    /// <param name="clientId">The client id</param>
+    /// <returns>
+    /// The client
+    /// </returns>
+    public virtual async Task<IdentityServer4.Models.Client> FindClientByIdAsync(string clientId)
+    {
+        using var activity = Tracing.StoreActivitySource.StartActivity("ClientStore.FindClientById");
+        activity?.SetTag(Tracing.Properties.ClientId, clientId);
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ClientStore"/> class.
-        /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="logger">The logger.</param>
-        /// <exception cref="ArgumentNullException">context</exception>
-        public ClientStore(IConfigurationDbContext context, ILogger<ClientStore> logger)
-        {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
-            Logger = logger;
-        }
+        var query = Context.Clients
+          .Where(x => x.ClientId == clientId)
+          .Include(x => x.AllowedCorsOrigins)
+          .Include(x => x.AllowedGrantTypes)
+          .Include(x => x.AllowedScopes)
+          .Include(x => x.Claims)
+          .Include(x => x.ClientSecrets)
+          .Include(x => x.IdentityProviderRestrictions)
+          .Include(x => x.PostLogoutRedirectUris)
+          .Include(x => x.Properties)
+          .Include(x => x.RedirectUris)
+          .AsNoTracking()
+          .AsSplitQuery();
 
-        /// <summary>
-        /// Finds a client by id
-        /// </summary>
-        /// <param name="clientId">The client id</param>
-        /// <returns>
-        /// The client
-        /// </returns>
-        public virtual async Task<Client> FindClientByIdAsync(string clientId)
-        {
-            IQueryable<Entities.Client> baseQuery = Context.Clients
-                .Where(x => x.ClientId == clientId);
+        var client = (await query.ToArrayAsync(CancellationTokenProvider.CancellationToken)).
+            SingleOrDefault(x => x.ClientId == clientId);
+        if (client == null) return null;
 
-            var client = (await baseQuery.ToArrayAsync())
-                .SingleOrDefault(x => x.ClientId == clientId);
-            if (client == null) return null;
+        var model = client.ToModel();
 
-            await baseQuery.Include(x => x.AllowedCorsOrigins).SelectMany(c => c.AllowedCorsOrigins).LoadAsync();
-            await baseQuery.Include(x => x.AllowedGrantTypes).SelectMany(c => c.AllowedGrantTypes).LoadAsync();
-            await baseQuery.Include(x => x.AllowedScopes).SelectMany(c => c.AllowedScopes).LoadAsync();
-            await baseQuery.Include(x => x.Claims).SelectMany(c => c.Claims).LoadAsync();
-            await baseQuery.Include(x => x.ClientSecrets).SelectMany(c => c.ClientSecrets).LoadAsync();
-            await baseQuery.Include(x => x.IdentityProviderRestrictions).SelectMany(c => c.IdentityProviderRestrictions).LoadAsync();
-            await baseQuery.Include(x => x.PostLogoutRedirectUris).SelectMany(c => c.PostLogoutRedirectUris).LoadAsync();
-            await baseQuery.Include(x => x.Properties).SelectMany(c => c.Properties).LoadAsync();
-            await baseQuery.Include(x => x.RedirectUris).SelectMany(c => c.RedirectUris).LoadAsync();
+        Logger.LogDebug("{clientId} found in database: {clientIdFound}", clientId, model != null);
 
-            var model = client.ToModel();
-
-            Logger.LogDebug("{clientId} found in database: {clientIdFound}", clientId, model != null);
-
-            return model;
-        }
+        return model;
     }
 }

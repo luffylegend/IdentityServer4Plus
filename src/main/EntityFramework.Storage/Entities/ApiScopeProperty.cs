@@ -3,11 +3,10 @@
 
 #pragma warning disable 1591
 
-namespace IdentityServer4.EntityFramework.Entities
+namespace IdentityServer4.EntityFramework.Entities;
+
+public class ApiScopeProperty : Property
 {
-    public class ApiScopeProperty : Property
-    {
-        public int ScopeId { get; set; }
-        public ApiScope Scope { get; set; }
-    }
+    public int ScopeId { get; set; }
+    public ApiScope Scope { get; set; }
 }

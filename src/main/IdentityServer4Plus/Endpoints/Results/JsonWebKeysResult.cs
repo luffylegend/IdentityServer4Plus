@@ -10,54 +10,51 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// Result for the jwks document
+/// </summary>
+/// <seealso cref="IEndpointResult" />
+public class JsonWebKeysResult : EndpointResult<JsonWebKeysResult>
 {
     /// <summary>
-    /// Result for the jwks document
+    /// Gets the web keys.
     /// </summary>
-    /// <seealso cref="IdentityServer4.Hosting.IEndpointResult" />
-    public class JsonWebKeysResult : IEndpointResult
+    /// <value>
+    /// The web keys.
+    /// </value>
+    public IEnumerable<JsonWebKey> WebKeys { get; }
+
+    /// <summary>
+    /// Gets the maximum age.
+    /// </summary>
+    /// <value>
+    /// The maximum age.
+    /// </value>
+    public int? MaxAge { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonWebKeysResult" /> class.
+    /// </summary>
+    /// <param name="webKeys">The web keys.</param>
+    /// <param name="maxAge">The maximum age.</param>
+    public JsonWebKeysResult(IEnumerable<JsonWebKey> webKeys, int? maxAge)
     {
-        /// <summary>
-        /// Gets the web keys.
-        /// </summary>
-        /// <value>
-        /// The web keys.
-        /// </value>
-        public IEnumerable<JsonWebKey> WebKeys { get; }
+        WebKeys = webKeys ?? throw new ArgumentNullException(nameof(webKeys));
+        MaxAge = maxAge;
+    }
+}
 
-        /// <summary>
-        /// Gets the maximum age.
-        /// </summary>
-        /// <value>
-        /// The maximum age.
-        /// </value>
-        public int? MaxAge { get; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonWebKeysResult" /> class.
-        /// </summary>
-        /// <param name="webKeys">The web keys.</param>
-        /// <param name="maxAge">The maximum age.</param>
-        public JsonWebKeysResult(IEnumerable<JsonWebKey> webKeys, int? maxAge)
+class JsonWebKeysHttpWriter : IHttpResponseWriter<JsonWebKeysResult>
+{
+    public Task WriteHttpResponse(JsonWebKeysResult result, HttpContext context)
+    {
+        if (result.MaxAge.HasValue && result.MaxAge.Value >= 0)
         {
-            WebKeys = webKeys ?? throw new ArgumentNullException(nameof(webKeys));
-            MaxAge = maxAge;
+            context.Response.SetCache(result.MaxAge.Value, "Origin");
         }
 
-        /// <summary>
-        /// Executes the result.
-        /// </summary>
-        /// <param name="context">The HTTP context.</param>
-        /// <returns></returns>
-        public Task ExecuteAsync(HttpContext context)
-        {
-            if (MaxAge.HasValue && MaxAge.Value >= 0)
-            {
-                context.Response.SetCache(MaxAge.Value, "Origin");
-            }
-
-            return context.Response.WriteJsonAsync(new { keys = WebKeys }, "application/json; charset=UTF-8");
-        }
+        return context.Response.WriteJsonAsync(new { keys = result.WebKeys }, "application/json; charset=UTF-8");
     }
 }

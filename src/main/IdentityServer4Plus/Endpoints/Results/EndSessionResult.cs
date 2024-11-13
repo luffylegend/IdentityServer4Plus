@@ -6,92 +6,85 @@ using IdentityServer4.Configuration;
 using IdentityServer4.Extensions;
 using IdentityServer4.Hosting;
 using IdentityServer4.Models;
+using IdentityServer4.Services;
 using IdentityServer4.Stores;
 using IdentityServer4.Validation;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// Result for endsession
+/// </summary>
+/// <seealso cref="IEndpointResult" />
+public class EndSessionResult : EndpointResult<EndSessionResult>
 {
     /// <summary>
-    /// Result for endsession
+    /// The result
     /// </summary>
-    /// <seealso cref="IdentityServer4.Hosting.IEndpointResult" />
-    public class EndSessionResult : IEndpointResult
+    public EndSessionValidationResult Result { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EndSessionResult"/> class.
+    /// </summary>
+    /// <param name="result">The result.</param>
+    /// <exception cref="System.ArgumentNullException">result</exception>
+    public EndSessionResult(EndSessionValidationResult result)
     {
-        private readonly EndSessionValidationResult _result;
+        Result = result ?? throw new ArgumentNullException(nameof(result));
+    }
+}
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EndSessionResult"/> class.
-        /// </summary>
-        /// <param name="result">The result.</param>
-        /// <exception cref="System.ArgumentNullException">result</exception>
-        public EndSessionResult(EndSessionValidationResult result)
+
+class EndSessionHttpWriter : IHttpResponseWriter<EndSessionResult>
+{
+    public EndSessionHttpWriter(
+        IdentityServerOptions options,
+        IClock clock,
+        IServerUrls urls,
+        IMessageStore<LogoutMessage> logoutMessageStore)
+    {
+        _options = options;
+        _clock = clock;
+        _urls = urls;
+        _logoutMessageStore = logoutMessageStore;
+    }
+
+    private IdentityServerOptions _options;
+    private IClock _clock;
+    private IServerUrls _urls;
+    private IMessageStore<LogoutMessage> _logoutMessageStore;
+
+    public async Task WriteHttpResponse(EndSessionResult result, HttpContext context)
+    {
+        var validatedRequest = result.Result.IsError ? null : result.Result.ValidatedRequest;
+
+        string id = null;
+
+        if (validatedRequest != null)
         {
-            _result = result ?? throw new ArgumentNullException(nameof(result));
-        }
-
-        internal EndSessionResult(
-            EndSessionValidationResult result,
-            IdentityServerOptions options,
-            IClock clock,
-            IMessageStore<LogoutMessage> logoutMessageStore)
-            : this(result)
-        {
-            _options = options;
-            _clock = clock;
-            _logoutMessageStore = logoutMessageStore;
-        }
-
-        private IdentityServerOptions _options;
-        private IClock _clock;
-        private IMessageStore<LogoutMessage> _logoutMessageStore;
-
-        private void Init(HttpContext context)
-        {
-            _options = _options ?? context.RequestServices.GetRequiredService<IdentityServerOptions>();
-            _clock = _clock ?? context.RequestServices.GetRequiredService<IClock>();
-            _logoutMessageStore = _logoutMessageStore ?? context.RequestServices.GetRequiredService<IMessageStore<LogoutMessage>>();
-        }
-
-        /// <summary>
-        /// Executes the result.
-        /// </summary>
-        /// <param name="context">The HTTP context.</param>
-        /// <returns></returns>
-        public async Task ExecuteAsync(HttpContext context)
-        {
-            Init(context);
-
-            var validatedRequest = _result.IsError ? null : _result.ValidatedRequest;
-
-            string id = null;
-
-            if (validatedRequest != null)
+            var logoutMessage = new LogoutMessage(validatedRequest);
+            if (logoutMessage.ContainsPayload)
             {
-                var logoutMessage = new LogoutMessage(validatedRequest);
-                if (logoutMessage.ContainsPayload)
-                {
-                    var msg = new Message<LogoutMessage>(logoutMessage, _clock.UtcNow.UtcDateTime);
-                    id = await _logoutMessageStore.WriteAsync(msg);
-                }
+                var msg = new Message<LogoutMessage>(logoutMessage, _clock.UtcNow.UtcDateTime);
+                id = await _logoutMessageStore.WriteAsync(msg);
             }
-
-            var redirect = _options.UserInteraction.LogoutUrl;
-
-            if (redirect.IsLocalUrl())
-            {
-                redirect = context.GetIdentityServerRelativeUrl(redirect);
-            }
-
-            if (id != null)
-            {
-                redirect = redirect.AddQueryString(_options.UserInteraction.LogoutIdParameter, id);
-            }
-
-            context.Response.Redirect(redirect);
         }
+
+        var redirect = _options.UserInteraction.LogoutUrl;
+
+        if (redirect.IsLocalUrl())
+        {
+            redirect = _urls.GetIdentityServerRelativeUrl(redirect);
+        }
+
+        if (id != null)
+        {
+            redirect = redirect.AddQueryString(_options.UserInteraction.LogoutIdParameter, id);
+        }
+
+        context.Response.Redirect(redirect);
     }
 }

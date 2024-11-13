@@ -3,11 +3,10 @@
 
 #pragma warning disable 1591
 
-namespace IdentityServer4.Stores.Serialization
+namespace IdentityServer4.Stores.Serialization;
+
+public class ClaimsPrincipalLite
 {
-    public class ClaimsPrincipalLite
-    {
-        public string AuthenticationType { get; set; }
-        public ClaimLite[] Claims { get; set; }
-    }
+    public string AuthenticationType { get; set; }
+    public ClaimLite[] Claims { get; set; }
 }

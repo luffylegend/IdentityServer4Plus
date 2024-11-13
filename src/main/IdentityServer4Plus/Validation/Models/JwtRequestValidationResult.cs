@@ -2,18 +2,21 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using System.Collections.Generic;
+#nullable enable
 
-namespace IdentityServer4.Validation
+using System.Collections.Generic;
+using System.Security.Claims;
+
+namespace IdentityServer4.Validation;
+
+/// <summary>
+/// Models the result of JWT request validation.
+/// </summary>
+public class JwtRequestValidationResult : ValidationResult
 {
     /// <summary>
-    /// Models the result of JWT request validation.
+    /// The key/value pairs from the JWT payload of a successfully validated
+    /// request, or null if a validation error occurred.
     /// </summary>
-    public class JwtRequestValidationResult : ValidationResult
-    {
-        /// <summary>
-        /// The key/value pairs from the JWT payload of a successfuly validated request.
-        /// </summary>
-        public Dictionary<string, string> Payload { get; set; }
-    }
+    public IEnumerable<Claim>? Payload { get; set; }
 }

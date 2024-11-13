@@ -9,31 +9,30 @@ using Serilog.Sinks.SystemConsole.Themes;
 using Microsoft.AspNetCore;
 using Serilog;
 
-namespace sample
+namespace sample;
+
+public class Program
 {
-    public class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
-        {
-            Console.Title = "IdentityServer4";
+        Console.Title = "IdentityServer4";
 
-            CreateWebHostBuilder(args).Build().Run();
-        }
+        CreateWebHostBuilder(args).Build().Run();
+    }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args)
-        {
-            return WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>()
-                .UseSerilog((context, configuration) =>
-                {
-                    configuration
-                        .MinimumLevel.Debug()
-                        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                        .MinimumLevel.Override("System", LogEventLevel.Warning)
-                        .MinimumLevel.Override("Microsoft.AspNetCore.Authentication", LogEventLevel.Information)
-                        .Enrich.FromLogContext()
-                        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate);
-                });
-        }
+    public static IWebHostBuilder CreateWebHostBuilder(string[] args)
+    {
+        return WebHost.CreateDefaultBuilder(args)
+            .UseStartup<Startup>()
+            .UseSerilog((context, configuration) =>
+            {
+                configuration
+                    .MinimumLevel.Debug()
+                    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                    .MinimumLevel.Override("System", LogEventLevel.Warning)
+                    .MinimumLevel.Override("Microsoft.AspNetCore.Authentication", LogEventLevel.Information)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate);
+            });
     }
 }

@@ -10,47 +10,66 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// Models result of a protected resource
+/// </summary>
+public class ProtectedResourceErrorResult : EndpointResult<ProtectedResourceErrorResult>
 {
-    internal class ProtectedResourceErrorResult : IEndpointResult
+    /// <summary>
+    /// The error
+    /// </summary>
+    public string Error { get; }
+    /// <summary>
+    /// The error description
+    /// </summary>
+    public string ErrorDescription { get; }
+
+    /// <summary>
+    /// Ctor
+    /// </summary>
+    /// <param name="error"></param>
+    /// <param name="errorDescription"></param>
+    public ProtectedResourceErrorResult(string error, string errorDescription = null)
     {
-        public string Error;
-        public string ErrorDescription;
+        Error = error;
+        ErrorDescription = errorDescription;
+    }
+}
 
-        public ProtectedResourceErrorResult(string error, string errorDescription = null)
+internal class ProtectedResourceErrorHttpWriter : IHttpResponseWriter<ProtectedResourceErrorResult>
+{
+    public Task WriteHttpResponse(ProtectedResourceErrorResult result, HttpContext context)
+    {
+        context.Response.StatusCode = 401;
+        context.Response.SetNoCache();
+
+        var error = result.Error;
+        var errorDescription = result.ErrorDescription;
+
+        if (Constants.ProtectedResourceErrorStatusCodes.ContainsKey(error))
         {
-            Error = error;
-            ErrorDescription = errorDescription;
+            context.Response.StatusCode = Constants.ProtectedResourceErrorStatusCodes[error];
         }
 
-        public Task ExecuteAsync(HttpContext context)
+        if (error == OidcConstants.ProtectedResourceErrors.ExpiredToken)
         {
-            context.Response.StatusCode = 401;
-            context.Response.SetNoCache();
-
-            if (Constants.ProtectedResourceErrorStatusCodes.ContainsKey(Error))
-            {
-                context.Response.StatusCode = Constants.ProtectedResourceErrorStatusCodes[Error];
-            }
-
-            if (Error == OidcConstants.ProtectedResourceErrors.ExpiredToken)
-            {
-                Error = OidcConstants.ProtectedResourceErrors.InvalidToken;
-                ErrorDescription = "The access token expired";
-            }
-
-            var errorString = string.Format($"error=\"{Error}\"");
-            if (ErrorDescription.IsMissing())
-            {
-                context.Response.Headers.Append(HeaderNames.WWWAuthenticate, new StringValues(new[] { "Bearer realm=\"IdentityServer\"", errorString }).ToString());
-            }
-            else
-            {
-                var errorDescriptionString = string.Format($"error_description=\"{ErrorDescription}\"");
-                context.Response.Headers.Append(HeaderNames.WWWAuthenticate, new StringValues(new[] { "Bearer realm=\"IdentityServer\"", errorString, errorDescriptionString }).ToString());
-            }
-
-            return Task.CompletedTask;
+            error = OidcConstants.ProtectedResourceErrors.InvalidToken;
+            errorDescription = "The access token expired";
         }
+
+        var errorString = string.Format($"error=\"{error}\"");
+        if (errorDescription.IsMissing())
+        {
+            context.Response.Headers.Append(HeaderNames.WWWAuthenticate, new StringValues(new[] { "Bearer realm=\"IdentityServer\"", errorString }).ToString());
+        }
+        else
+        {
+            var errorDescriptionString = string.Format($"error_description=\"{errorDescription}\"");
+            context.Response.Headers.Append(HeaderNames.WWWAuthenticate, new StringValues(new[] { "Bearer realm=\"IdentityServer\"", errorString, errorDescriptionString }).ToString());
+        }
+
+        return Task.CompletedTask;
     }
 }

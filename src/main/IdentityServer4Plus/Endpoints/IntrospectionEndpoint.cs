@@ -6,124 +6,167 @@ using IdentityServer4.Endpoints.Results;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
 using IdentityServer4.Hosting;
+using IdentityServer4.Models;
 using IdentityServer4.ResponseHandling;
 using IdentityServer4.Services;
 using IdentityServer4.Validation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints
-{
-    /// <summary>
-    /// Introspection endpoint
-    /// </summary>
-    /// <seealso cref="IdentityServer4.Hosting.IEndpointHandler" />
-    internal class IntrospectionEndpoint : IEndpointHandler
-    {
-        private readonly IIntrospectionResponseGenerator _responseGenerator;
-        private readonly IEventService _events;
-        private readonly ILogger _logger;
-        private readonly IIntrospectionRequestValidator _requestValidator;
-        private readonly IApiSecretValidator _apiSecretValidator;
+namespace IdentityServer4.Endpoints;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="IntrospectionEndpoint" /> class.
-        /// </summary>
-        /// <param name="apiSecretValidator">The API secret validator.</param>
-        /// <param name="requestValidator">The request validator.</param>
-        /// <param name="responseGenerator">The generator.</param>
-        /// <param name="events">The events.</param>
-        /// <param name="logger">The logger.</param>
-        public IntrospectionEndpoint(
-            IApiSecretValidator apiSecretValidator,
-            IIntrospectionRequestValidator requestValidator,
-            IIntrospectionResponseGenerator responseGenerator,
-            IEventService events,
-            ILogger<IntrospectionEndpoint> logger)
+/// <summary>
+/// Introspection endpoint
+/// </summary>
+/// <seealso cref="IEndpointHandler" />
+internal class IntrospectionEndpoint : IEndpointHandler
+{
+    private readonly IIntrospectionResponseGenerator _responseGenerator;
+    private readonly IEventService _events;
+    private readonly ILogger _logger;
+    private readonly IIntrospectionRequestValidator _requestValidator;
+    private readonly IApiSecretValidator _apiSecretValidator;
+    private readonly IClientSecretValidator _clientValidator;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="IntrospectionEndpoint" /> class.
+    /// </summary>
+    /// <param name="apiSecretValidator">The API secret validator.</param>
+    /// <param name="clientValidator"></param>
+    /// <param name="requestValidator">The request validator.</param>
+    /// <param name="responseGenerator">The generator.</param>
+    /// <param name="events">The events.</param>
+    /// <param name="logger">The logger.</param>
+    public IntrospectionEndpoint(
+        IApiSecretValidator apiSecretValidator,
+        IClientSecretValidator clientValidator,
+        IIntrospectionRequestValidator requestValidator,
+        IIntrospectionResponseGenerator responseGenerator,
+        IEventService events,
+        ILogger<IntrospectionEndpoint> logger)
+    {
+        _apiSecretValidator = apiSecretValidator;
+        _clientValidator = clientValidator;
+        _requestValidator = requestValidator;
+        _responseGenerator = responseGenerator;
+        _events = events;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Processes the request.
+    /// </summary>
+    /// <param name="context">The HTTP context.</param>
+    /// <returns></returns>
+    public async Task<IEndpointResult> ProcessAsync(HttpContext context)
+    {
+        using var activity = Tracing.BasicActivitySource.StartActivity(IdentityServerConstants.EndpointNames.Introspection + "Endpoint");
+
+        _logger.LogTrace("Processing introspection request.");
+
+        // validate HTTP
+        if (!HttpMethods.IsPost(context.Request.Method))
         {
-            _apiSecretValidator = apiSecretValidator;
-            _requestValidator = requestValidator;
-            _responseGenerator = responseGenerator;
-            _events = events;
-            _logger = logger;
+            _logger.LogWarning("Introspection endpoint only supports POST requests");
+            return new StatusCodeResult(HttpStatusCode.MethodNotAllowed);
         }
 
-        /// <summary>
-        /// Processes the request.
-        /// </summary>
-        /// <param name="context">The HTTP context.</param>
-        /// <returns></returns>
-        public async Task<IEndpointResult> ProcessAsync(HttpContext context)
+        if (!context.Request.HasApplicationFormContentType())
         {
-            _logger.LogTrace("Processing introspection request.");
+            _logger.LogWarning("Invalid media type for introspection endpoint");
+            return new StatusCodeResult(HttpStatusCode.UnsupportedMediaType);
+        }
 
-            // validate HTTP
-            if (!HttpMethods.IsPost(context.Request.Method))
-            {
-                _logger.LogWarning("Introspection endpoint only supports POST requests");
-                return new StatusCodeResult(HttpStatusCode.MethodNotAllowed);
-            }
-
-            if (!context.Request.HasApplicationFormContentType())
-            {
-                _logger.LogWarning("Invalid media type for introspection endpoint");
-                return new StatusCodeResult(HttpStatusCode.UnsupportedMediaType);
-            }
-
+        try
+        {
             return await ProcessIntrospectionRequestAsync(context);
         }
-
-        private async Task<IEndpointResult> ProcessIntrospectionRequestAsync(HttpContext context)
+        catch (InvalidDataException ex)
         {
-            _logger.LogDebug("Starting introspection request.");
+            _logger.LogWarning(ex, "Invalid HTTP request for introspection endpoint");
+            return new StatusCodeResult(HttpStatusCode.BadRequest);
+        }
+    }
 
-            // caller validation
-            var apiResult = await _apiSecretValidator.ValidateAsync(context);
-            if (apiResult.Resource == null)
+    private async Task<IEndpointResult> ProcessIntrospectionRequestAsync(HttpContext context)
+    {
+        _logger.LogDebug("Starting introspection request.");
+
+        // caller validation
+        ClientSecretValidationResult clientResult = null;
+
+        ApiResource api = null;
+        Client client = null;
+
+        var apiResult = await _apiSecretValidator.ValidateAsync(context);
+        if (apiResult.IsError)
+        {
+            clientResult = await _clientValidator.ValidateAsync(context);
+            if (clientResult.IsError)
             {
-                _logger.LogError("API unauthorized to call introspection endpoint. aborting.");
+                _logger.LogError("Unauthorized call introspection endpoint. aborting.");
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
-
-            var body = await context.Request.ReadFormAsync();
-            if (body == null)
+            else
             {
-                _logger.LogError("Malformed request body. aborting.");
-                await _events.RaiseAsync(new TokenIntrospectionFailureEvent(apiResult.Resource.Name, "Malformed request body"));
-
-                return new StatusCodeResult(HttpStatusCode.BadRequest);
+                client = clientResult.Client;
+                _logger.LogDebug("Client making introspection request: {clientId}", client.ClientId);
             }
-
-            // request validation
-            _logger.LogTrace("Calling into introspection request validator: {type}", _requestValidator.GetType().FullName);
-            var validationResult = await _requestValidator.ValidateAsync(body.AsNameValueCollection(), apiResult.Resource);
-            if (validationResult.IsError)
-            {
-                LogFailure(validationResult.Error, apiResult.Resource.Name);
-                await _events.RaiseAsync(new TokenIntrospectionFailureEvent(apiResult.Resource.Name, validationResult.Error));
-
-                return new BadRequestResult(validationResult.Error);
-            }
-
-            // response generation
-            _logger.LogTrace("Calling into introspection response generator: {type}", _responseGenerator.GetType().FullName);
-            var response = await _responseGenerator.ProcessAsync(validationResult);
-
-            // render result
-            LogSuccess(validationResult.IsActive, validationResult.Api.Name);
-            return new IntrospectionResult(response);
         }
-
-        private void LogSuccess(bool tokenActive, string apiName)
+        else
         {
-            _logger.LogInformation("Success token introspection. Token active: {tokenActive}, for API name: {apiName}", tokenActive, apiName);
+            api = apiResult.Resource;
+            _logger.LogDebug("ApiResource making introspection request: {apiId}", api.Name);
         }
 
-        private void LogFailure(string error, string apiName)
+        var callerName = api?.Name ?? client.ClientId;
+
+        var body = await context.Request.ReadFormAsync();
+        if (body == null)
         {
-            _logger.LogError("Failed token introspection: {error}, for API name: {apiName}", error, apiName);
+            _logger.LogError("Malformed request body. aborting.");
+            const string error = "Malformed request body";
+            await _events.RaiseAsync(new TokenIntrospectionFailureEvent(callerName, error));
+            Telemetry.Metrics.IntrospectionFailure(callerName, error);
+            return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
+
+        // request validation
+        _logger.LogTrace("Calling into introspection request validator: {type}", _requestValidator.GetType().FullName);
+        var validationRequest = new IntrospectionRequestValidationContext
+        {
+            Parameters = body.AsNameValueCollection(),
+            Api = api,
+            Client = client,
+        };
+        var validationResult = await _requestValidator.ValidateAsync(validationRequest);
+        if (validationResult.IsError)
+        {
+            LogFailure(validationResult.Error, callerName);
+            await _events.RaiseAsync(new TokenIntrospectionFailureEvent(callerName, validationResult.Error));
+            Telemetry.Metrics.IntrospectionFailure(callerName, validationResult.Error);
+            return new BadRequestResult(validationResult.Error);
+        }
+
+        // response generation
+        _logger.LogTrace("Calling into introspection response generator: {type}", _responseGenerator.GetType().FullName);
+        var response = await _responseGenerator.ProcessAsync(validationResult);
+
+        // render result
+        LogSuccess(validationResult.IsActive, callerName);
+        return new IntrospectionResult(response);
+    }
+
+    private void LogSuccess(bool tokenActive, string callerName)
+    {
+        _logger.LogInformation("Success token introspection. Token active: {tokenActive}, for caller: {callerName}", tokenActive, callerName);
+    }
+
+    private void LogFailure(string error, string callerName)
+    {
+        _logger.LogError("Failed token introspection: {error}, for caller: {callerName}", error, callerName);
     }
 }

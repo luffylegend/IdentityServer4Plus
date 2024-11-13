@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>IdentityServer4Plus.AccessToken.OpenIdConnect</PackageId>
+        <TargetFrameworks>net8.0</TargetFrameworks>
+        <AssemblyName>IdentityServer4Plus.AccessToken.OpenIdConnect</AssemblyName>
+        <Description>Automatic access token management for interactive OpenIdConnect-based ASP.NET Core applications</Description>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <!-- strong naming fml -->
+        <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
+        <SignAssembly>true</SignAssembly>
+        <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+        <IncludeSymbols>True</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../../../README.md" Pack="true" PackagePath="/" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+        <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+        <PackageReference Update="MinVer" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\AccessToken\IdentityServer4Plus.AccessToken.csproj" />
+    </ItemGroup>
+
+</Project>
+

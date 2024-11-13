@@ -4,124 +4,122 @@
 
 using FluentAssertions;
 using IdentityModel.Client;
-using IdentityServer.IntegrationTests.Clients.Setup;
+using IntegrationTests.Clients.Setup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace IdentityServer.IntegrationTests.Clients
+namespace IntegrationTests.Clients;
+
+public class CustomTokenRequestValidatorClient
 {
-    public class CustomTokenRequestValidatorClient
+    private const string TokenEndpoint = "https://server/connect/token";
+
+    private readonly HttpClient _client;
+
+    public CustomTokenRequestValidatorClient()
     {
-        private const string TokenEndpoint = "https://server/connect/token";
+        var val = new TestCustomTokenRequestValidator();
+        Startup.CustomTokenRequestValidator = val;
 
-        private readonly HttpClient _client;
+        var builder = new WebHostBuilder()
+            .UseStartup<Startup>();
+        var server = new TestServer(builder);
 
-        public CustomTokenRequestValidatorClient()
+        _client = server.CreateClient();
+    }
+
+    [Fact]
+    public async Task Client_credentials_request_should_contain_custom_response()
+    {
+        var response = await _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
         {
-            var val = new TestCustomTokenRequestValidator();
-            Startup.CustomTokenRequestValidator = val;
+            Address = TokenEndpoint,
 
-            var builder = new WebHostBuilder()
-                .UseStartup<Startup>();
-            var server = new TestServer(builder);
+            ClientId = "client",
+            ClientSecret = "secret",
+            Scope = "api1"
+        });
 
-            _client = server.CreateClient();
-        }
+        var fields = GetFields(response);
+        fields["custom"].GetString().Should().Be("custom");
+    }
 
-        [Fact]
-        public async Task Client_credentials_request_should_contain_custom_response()
+    [Fact]
+    public async Task Resource_owner_credentials_request_should_contain_custom_response()
+    {
+        var response = await _client.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
-            var response = await _client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
-            {
-                Address = TokenEndpoint,
+            Address = TokenEndpoint,
 
-                ClientId = "client",
-                ClientSecret = "secret",
-                Scope = "api1"
-            });
+            ClientId = "roclient",
+            ClientSecret = "secret",
+            Scope = "api1",
 
-            var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
-        }
+            UserName = "bob",
+            Password = "bob"
+        });
 
-        [Fact]
-        public async Task Resource_owner_credentials_request_should_contain_custom_response()
+        var fields = GetFields(response);
+        fields["custom"].GetString().Should().Be("custom");
+    }
+
+    [Fact]
+    public async Task Refreshing_a_token_should_contain_custom_response()
+    {
+        var response = await _client.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
-            var response = await _client.RequestPasswordTokenAsync(new PasswordTokenRequest
-            {
-                Address = TokenEndpoint,
+            Address = TokenEndpoint,
 
-                ClientId = "roclient",
-                ClientSecret = "secret",
-                Scope = "api1",
+            ClientId = "roclient",
+            ClientSecret = "secret",
+            Scope = "api1 offline_access",
 
-                UserName = "bob",
-                Password = "bob"
-            });
+            UserName = "bob",
+            Password = "bob"
+        });
 
-            var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
-        }
-
-        [Fact]
-        public async Task Refreshing_a_token_should_contain_custom_response()
+        response = await _client.RequestRefreshTokenAsync(new RefreshTokenRequest
         {
-            var response = await _client.RequestPasswordTokenAsync(new PasswordTokenRequest
-            {
-                Address = TokenEndpoint,
+            Address = TokenEndpoint,
+            ClientId = "roclient",
+            ClientSecret = "secret",
 
-                ClientId = "roclient",
-                ClientSecret = "secret",
-                Scope = "api1 offline_access",
+            RefreshToken = response.RefreshToken
+        });
 
-                UserName = "bob",
-                Password = "bob"
-            });
+        var fields = GetFields(response);
+        fields["custom"].GetString().Should().Be("custom");
+    }
 
-            response = await _client.RequestRefreshTokenAsync(new RefreshTokenRequest
-            {
-                Address = TokenEndpoint,
-                ClientId = "roclient",
-                ClientSecret = "secret",
-
-                RefreshToken = response.RefreshToken
-            });
-
-            var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
-        }
-
-        [Fact]
-        public async Task Extension_grant_request_should_contain_custom_response()
+    [Fact]
+    public async Task Extension_grant_request_should_contain_custom_response()
+    {
+        var response = await _client.RequestTokenAsync(new TokenRequest
         {
-            var response = await _client.RequestTokenAsync(new TokenRequest
-            {
-                Address = TokenEndpoint,
-                GrantType = "custom",
+            Address = TokenEndpoint,
+            GrantType = "custom",
 
-                ClientId = "client.custom",
-                ClientSecret = "secret",
+            ClientId = "client.custom",
+            ClientSecret = "secret",
 
-                Parameters =
-                {
-                    { "scope", "api1" },
-                    { "custom_credential", "custom credential"}
-                }
-            });
-
-            var fields = GetFields(response);
-            fields.Should().Contain("custom", "custom");
-        }
-
-        private Dictionary<string, object> GetFields(TokenResponse response)
+            Parameters =
         {
-            return JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Json.Value.GetRawText());
-            // return response.Json.ToObject<Dictionary<string, object>>();
+            { "scope", "api1" },
+            { "custom_credential", "custom credential"}
         }
+        });
+
+        var fields = GetFields(response);
+        fields["custom"].GetString().Should().Be("custom");
+    }
+
+    private Dictionary<string, JsonElement> GetFields(TokenResponse response)
+    {
+        return response.Json?.ToObject<Dictionary<string, JsonElement>>();
     }
 }

@@ -6,20 +6,22 @@ using Microsoft.IdentityModel.Tokens;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 
-namespace IdentityServer.UnitTests.Common
-{
-    internal static class TestCert
-    {
-        public static X509Certificate2 Load()
-        {
-            var cert = Path.Combine(System.AppContext.BaseDirectory, "identityserver_testing.pfx");
-            return new X509Certificate2(cert, "password");
-        }
+namespace UnitTests.Common;
 
-        public static SigningCredentials LoadSigningCredentials()
-        {
-            var cert = Load();
-            return new SigningCredentials(new X509SecurityKey(cert), "RS256");
-        }
+internal static class TestCert
+{
+    public static X509Certificate2 Load()
+    {
+        var cert = Path.Combine(System.AppContext.BaseDirectory, "identityserver_testing.pfx");
+#pragma warning disable SYSLIB0057 // Type or member is obsolete
+        // TODO - Use X509CertificateLoader in a future release (when we drop NET8 support)
+        return new X509Certificate2(cert, "password");
+#pragma warning restore SYSLIB0057 // Type or member is obsolete
+    }
+
+    public static SigningCredentials LoadSigningCredentials()
+    {
+        var cert = Load();
+        return new SigningCredentials(new X509SecurityKey(cert), "RS256");
     }
 }

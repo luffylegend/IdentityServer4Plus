@@ -8,136 +8,135 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace IdentityServer.UnitTests.Validation
+namespace UnitTests.Validation;
+
+public class GrantTypesValidation
 {
-    public class GrantTypesValidation
+    private const string Category = "Grant Types Validation";
+
+    [Fact]
+    [Trait("Category", Category)]
+    public void Empty_should_be_allowed()
     {
-        private const string Category = "Grant Types Validation";
+        var client = new Client();
+        client.AllowedGrantTypes = new List<string>();
+    }
 
-        [Fact]
-        [Trait("Category", Category)]
-        public void Empty_should_be_allowed()
+    [Fact]
+    [Trait("Category", Category)]
+    public void Implicit_should_be_allowed()
+    {
+        var client = new Client();
+        client.AllowedGrantTypes = GrantTypes.Implicit;
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public void Custom_should_be_allowed()
+    {
+        var client = new Client();
+        client.AllowedGrantTypes = new[] { "custom" };
+    }
+
+    [Fact]
+    [Trait("Category", Category)]
+    public void Custom_should_be_allowed_raw()
+    {
+        var client = new Client();
+        client.AllowedGrantTypes = new[] { "custom" };
+    }
+
+    [Theory]
+    [Trait("Category", Category)]
+    [InlineData(GrantType.Implicit, GrantType.Hybrid)]
+    [InlineData(GrantType.Implicit, GrantType.AuthorizationCode)]
+    [InlineData(GrantType.AuthorizationCode, GrantType.Hybrid)]
+    public void Forbidden_grant_type_combinations_should_throw(string type1, string type2)
+    {
+        var client = new Client();
+
+        Action act = () => client.AllowedGrantTypes = new[] { type1, type2 };
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Theory]
+    [Trait("Category", Category)]
+    [InlineData(GrantType.Implicit, GrantType.Hybrid)]
+    [InlineData(GrantType.Implicit, GrantType.AuthorizationCode)]
+    [InlineData(GrantType.AuthorizationCode, GrantType.Hybrid)]
+    public void Custom_and_forbidden_grant_type_combinations_should_throw(string type1, string type2)
+    {
+        var client = new Client();
+
+        Action act = () => client.AllowedGrantTypes = new[] { "custom1", type2, "custom2", type1 };
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Duplicate_values_should_throw()
+    {
+        var client = new Client();
+
+        Action act = () => client.AllowedGrantTypes = new[] { "custom1", "custom2", "custom1" };
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Null_grant_type_list_should_throw_single()
+    {
+        var client = new Client();
+
+        Action act = () => client.AllowedGrantTypes = null;
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Grant_type_with_space_should_throw_single()
+    {
+        var client = new Client();
+
+        Action act = () => client.AllowedGrantTypes = new[] { "custo m2" };
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Grant_type_with_space_should_throw_multiple()
+    {
+        var client = new Client();
+
+        Action act = () => client.AllowedGrantTypes = new[] { "custom1", "custo m2", "custom1" };
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Adding_invalid_value_to_collection_should_throw()
+    {
+        var client = new Client()
         {
-            var client = new Client();
-            client.AllowedGrantTypes = new List<string>();
-        }
+            AllowedGrantTypes = { "implicit" }
+        };
 
-        [Fact]
-        [Trait("Category", Category)]
-        public void Implicit_should_be_allowed()
+        Action act = () => client.AllowedGrantTypes.Add("authorization_code");
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Adding_valid_value_to_collection_should_succeed()
+    {
+        var client = new Client()
         {
-            var client = new Client();
-            client.AllowedGrantTypes = GrantTypes.Implicit;
-        }
+            AllowedGrantTypes = { "implicit" }
+        };
 
-        [Fact]
-        [Trait("Category", Category)]
-        public void Custom_should_be_allowed()
-        {
-            var client = new Client();
-            client.AllowedGrantTypes = new[] { "custom" };
-        }
+        client.AllowedGrantTypes.Add("custom");
 
-        [Fact]
-        [Trait("Category", Category)]
-        public void Custom_should_be_allowed_raw()
-        {
-            var client = new Client();
-            client.AllowedGrantTypes = new[] { "custom" };
-        }
-        
-        [Theory]
-        [Trait("Category", Category)]
-        [InlineData(GrantType.Implicit, GrantType.Hybrid)]
-        [InlineData(GrantType.Implicit, GrantType.AuthorizationCode)]
-        [InlineData(GrantType.AuthorizationCode, GrantType.Hybrid)]
-        public void Forbidden_grant_type_combinations_should_throw(string type1, string type2)
-        {
-            var client = new Client();
-
-            Action act = () => client.AllowedGrantTypes = new[] { type1, type2 };
-
-            act.Should().Throw<InvalidOperationException>();            
-        }
-
-        [Theory]
-        [Trait("Category", Category)]
-        [InlineData(GrantType.Implicit, GrantType.Hybrid)]
-        [InlineData(GrantType.Implicit, GrantType.AuthorizationCode)]
-        [InlineData(GrantType.AuthorizationCode, GrantType.Hybrid)]
-        public void Custom_and_forbidden_grant_type_combinations_should_throw(string type1, string type2)
-        {
-            var client = new Client();
-
-            Action act = () => client.AllowedGrantTypes = new[] { "custom1", type2, "custom2", type1 };
-
-            act.Should().Throw<InvalidOperationException>();
-        }
-
-        [Fact]
-        public void Duplicate_values_should_throw()
-        {
-            var client = new Client();
-
-            Action act = () => client.AllowedGrantTypes = new[] { "custom1", "custom2", "custom1" };
-
-            act.Should().Throw<InvalidOperationException>();
-        }
-
-        [Fact]
-        public void Null_grant_type_list_should_throw_single()
-        {
-            var client = new Client();
-
-            Action act = () => client.AllowedGrantTypes = null;
-
-            act.Should().Throw<ArgumentNullException>();
-        }
-
-        [Fact]
-        public void Grant_type_with_space_should_throw_single()
-        {
-            var client = new Client();
-
-            Action act = () => client.AllowedGrantTypes = new[] { "custo m2" };
-
-            act.Should().Throw<InvalidOperationException>();
-        }
-
-        [Fact]
-        public void Grant_type_with_space_should_throw_multiple()
-        {
-            var client = new Client();
-
-            Action act = () => client.AllowedGrantTypes = new[] { "custom1", "custo m2", "custom1" };
-
-            act.Should().Throw<InvalidOperationException>();
-        }
-
-        [Fact]
-        public void Adding_invalid_value_to_collection_should_throw()
-        {
-            var client = new Client()
-            {
-                AllowedGrantTypes = { "implicit" }
-            };
-
-            Action act = () => client.AllowedGrantTypes.Add("authorization_code");
-
-            act.Should().Throw<InvalidOperationException>();
-        }
-
-        [Fact]
-        public void Adding_valid_value_to_collection_should_succeed()
-        {
-            var client = new Client()
-            {
-                AllowedGrantTypes = { "implicit" }
-            };
-
-            client.AllowedGrantTypes.Add("custom");
-
-            client.AllowedGrantTypes.Count.Should().Be(2);
-        }
+        client.AllowedGrantTypes.Count.Should().Be(2);
     }
 }

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <TargetFrameworks>net8.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\main\Configuration\IdentityServer4Plus.Configuration.csproj" />
+    <ProjectReference Include="..\..\main\EntityFramework.Storage\IdentityServer4Plus.EntityFramework.Storage.csproj" />
+    <ProjectReference Include="..\..\main\EntityFramework.Configuration\IdentityServer4Plus.EntityFramework.Configuration.csproj" />
+    <ProjectReference Include="..\..\main\IdentityServer4Plus\IdentityServer4Plus.csproj" />
+    <ProjectReference Include="..\..\main\Storage\IdentityServer4Plus.Storage.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="AngleSharp" />
+  </ItemGroup>
+</Project>

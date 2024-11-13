@@ -5,67 +5,66 @@
 using IdentityServer4.Models;
 using System.Collections.Generic;
 
-namespace IdentityServer.IntegrationTests.Clients.Setup
+namespace IntegrationTests.Clients.Setup;
+
+internal class Scopes
 {
-    internal class Scopes
+    public static IEnumerable<IdentityResource> GetIdentityScopes()
     {
-        public static IEnumerable<IdentityResource> GetIdentityScopes()
+        return new IdentityResource[]
         {
-            return new IdentityResource[]
-            {
-                new IdentityResources.OpenId(),
-                new IdentityResources.Email(),
-                new IdentityResources.Address(),
-                new IdentityResource("roles", new[] { "role" })
-            };
-        }
+        new IdentityResources.OpenId(),
+        new IdentityResources.Email(),
+        new IdentityResources.Address(),
+        new IdentityResource("roles", new[] { "role" })
+        };
+    }
 
-        public static IEnumerable<ApiResource> GetApiResources()
+    public static IEnumerable<ApiResource> GetApiResources()
+    {
+        return new List<ApiResource>
+    {
+        new ApiResource
         {
-            return new List<ApiResource>
+            Name = "api",
+            ApiSecrets =
             {
-                new ApiResource
-                {
-                    Name = "api",
-                    ApiSecrets =
-                    {
-                        new Secret("secret".Sha256())
-                    },
-                    Scopes = { "api1", "api2", "api3", "api4.with.roles" }
-                },
-                new ApiResource("other_api")
-                {
-                    Scopes = { "other_api" }
-                }
-            };
+                new Secret("secret".Sha256())
+            },
+            Scopes = { "api1", "api2", "api3", "api4.with.roles" }
+        },
+        new ApiResource("other_api")
+        {
+            Scopes = { "other_api" }
         }
+    };
+    }
 
-        public static IEnumerable<ApiScope> GetApiScopes()
+    public static IEnumerable<ApiScope> GetApiScopes()
+    {
+        return new ApiScope[]
         {
-            return new ApiScope[]
-            {
-                new ApiScope
-                {
-                    Name = "api1"
-                },
-                new ApiScope
-                {
-                    Name = "api2"
-                },
-                new ApiScope
-                {
-                    Name = "api3"
-                },
-                new ApiScope
-                {
-                    Name = "api4.with.roles",
-                    UserClaims = { "role" }
-                },
-                new ApiScope
-                {
-                    Name = "other_api",
-                },
-            };
-        }
+        new ApiScope
+        {
+            Name = "api1"
+        },
+        new ApiScope
+        {
+            Name = "api2"
+        },
+        new ApiScope
+        {
+            Name = "api3"
+        },
+        new ApiScope
+        {
+            Name = "api4.with.roles",
+            UserClaims = { "role" }
+        },
+        new ApiScope
+        {
+            Name = "other_api",
+        },
+        };
     }
 }

@@ -5,23 +5,22 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace IdentityServer4
-{
-    internal static class ObjectSerializer
-    {
-        private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-        
-        public static string ToString(object o)
-        {
-            return JsonSerializer.Serialize(o, Options);
-        }
+namespace IdentityServer4;
 
-        public static T FromString<T>(string value)
-        {
-            return JsonSerializer.Deserialize<T>(value, Options);
-        }
+internal static class ObjectSerializer
+{
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    public static string ToString(object o)
+    {
+        return JsonSerializer.Serialize(o, Options);
+    }
+
+    public static T FromString<T>(string value)
+    {
+        return JsonSerializer.Deserialize<T>(value, Options);
     }
 }

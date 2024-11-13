@@ -5,19 +5,18 @@
 using System.Collections.Specialized;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Validation
+namespace IdentityServer4.Validation;
+
+/// <summary>
+///  Device authorization endpoint request validator.
+/// </summary>
+public interface IDeviceAuthorizationRequestValidator
 {
     /// <summary>
-    ///  Device authorization endpoint request validator.
+    ///  Validates authorize request parameters.
     /// </summary>
-    public interface IDeviceAuthorizationRequestValidator
-    {
-        /// <summary>
-        ///  Validates authorize request parameters.
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <param name="clientValidationResult"></param>
-        /// <returns></returns>
-        Task<DeviceAuthorizationRequestValidationResult> ValidateAsync(NameValueCollection parameters, ClientSecretValidationResult clientValidationResult);
-    }
+    /// <param name="parameters"></param>
+    /// <param name="clientValidationResult"></param>
+    /// <returns></returns>
+    Task<DeviceAuthorizationRequestValidationResult> ValidateAsync(NameValueCollection parameters, ClientSecretValidationResult clientValidationResult);
 }

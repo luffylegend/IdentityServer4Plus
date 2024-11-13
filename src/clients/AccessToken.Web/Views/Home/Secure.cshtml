@@ -1,0 +1,40 @@
+@using Microsoft.AspNetCore.Authentication
+
+<h3>Call API as User</h3>
+
+@(!Startup.UseDPoP ? "<a asp-controller=\"Home\" asp-action=\"CallApiAsUserManual\">Manual</a> | " : "")
+@(!Startup.UseDPoP ? "<a asp-controller=\"Home\" asp-action=\"CallApiAsUserExtensionMethod\">Extension method</a> | " : "")
+<a asp-controller="Home" asp-action="CallApiAsUserFactory">HTTP client factory</a>
+@("|")
+<a asp-controller="Home" asp-action="CallApiAsUserFactoryTyped">HTTP client factory (typed)</a>
+@("|")
+<a asp-controller="Home" asp-action="CallApiAsUserResourceIndicator">Use resource indicator</a>
+
+<h3>Call API as Client</h3>
+
+@(!Startup.UseDPoP ? "<a asp-controller=\"Home\" asp-action=\"CallApiAsClientExtensionMethod\"> Extension method </a> | " : "")
+<a asp-controller="Home" asp-action="CallApiAsClientFactory">HTTP client factory</a>
+@("|")
+<a asp-controller="Home" asp-action="CallApiAsClientFactoryTyped">HTTP client factory (typed)</a>
+@("|")
+<a asp-controller="Home" asp-action="CallApiAsClientResourceIndicator">Use resource indicator</a>
+
+<h2>Claims</h2>
+
+<dl>
+    @foreach (var claim in User.Claims)
+    {
+        <dt>@claim.Type</dt>
+        <dd>@claim.Value</dd>
+    }
+</dl>
+
+<h2>Properties</h2>
+
+<dl>
+    @foreach (var prop in (await Context!.AuthenticateAsync())!.Properties!.Items)
+    {
+        <dt>@prop.Key</dt>
+        <dd>@prop.Value</dd>
+    }
+</dl>

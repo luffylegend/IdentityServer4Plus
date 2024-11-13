@@ -5,11 +5,10 @@
 using IdentityServer4;
 using System;
 
-namespace IdentityServer.UnitTests.Common
+namespace UnitTests.Common;
+
+internal class StubClock : IClock
 {
-    internal class StubClock : IClock
-    {
-        public Func<DateTime> UtcNowFunc = () => DateTime.UtcNow;
-        public DateTimeOffset UtcNow => new DateTimeOffset(UtcNowFunc());
-    }
+    public Func<DateTime> UtcNowFunc { get; set; } = () => DateTime.UtcNow;
+    public DateTimeOffset UtcNow => new DateTimeOffset(UtcNowFunc());
 }

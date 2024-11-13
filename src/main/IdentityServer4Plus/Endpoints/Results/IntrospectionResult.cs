@@ -9,42 +9,40 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace IdentityServer4.Endpoints.Results
+namespace IdentityServer4.Endpoints.Results;
+
+/// <summary>
+/// Result for introspection
+/// </summary>
+/// <seealso cref="IEndpointResult" />
+public class IntrospectionResult : EndpointResult<IntrospectionResult>
 {
     /// <summary>
-    /// Result for introspection
+    /// Gets the result.
     /// </summary>
-    /// <seealso cref="IdentityServer4.Hosting.IEndpointResult" />
-    public class IntrospectionResult : IEndpointResult
+    /// <value>
+    /// The result.
+    /// </value>
+    public Dictionary<string, object> Entries { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="IntrospectionResult"/> class.
+    /// </summary>
+    /// <param name="entries">The result.</param>
+    /// <exception cref="System.ArgumentNullException">result</exception>
+    public IntrospectionResult(Dictionary<string, object> entries)
     {
-        /// <summary>
-        /// Gets the result.
-        /// </summary>
-        /// <value>
-        /// The result.
-        /// </value>
-        public Dictionary<string, object> Entries { get; }
+        Entries = entries ?? throw new ArgumentNullException(nameof(entries));
+    }
+}
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="IntrospectionResult"/> class.
-        /// </summary>
-        /// <param name="entries">The result.</param>
-        /// <exception cref="System.ArgumentNullException">result</exception>
-        public IntrospectionResult(Dictionary<string, object> entries)
-        {
-            Entries = entries ?? throw new ArgumentNullException(nameof(entries));
-        }
 
-        /// <summary>
-        /// Executes the result.
-        /// </summary>
-        /// <param name="context">The HTTP context.</param>
-        /// <returns></returns>
-        public Task ExecuteAsync(HttpContext context)
-        {
-            context.Response.SetNoCache();
-            
-            return context.Response.WriteJsonAsync(Entries);
-        }
+class IntrospectionHttpWriter : IHttpResponseWriter<IntrospectionResult>
+{
+    public Task WriteHttpResponse(IntrospectionResult result, HttpContext context)
+    {
+        context.Response.SetNoCache();
+
+        return context.Response.WriteJsonAsync(result.Entries);
     }
 }

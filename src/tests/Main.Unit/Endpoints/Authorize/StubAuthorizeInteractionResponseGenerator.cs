@@ -7,15 +7,14 @@ using IdentityServer4.ResponseHandling;
 using IdentityServer4.Validation;
 using System.Threading.Tasks;
 
-namespace IdentityServer.UnitTests.Endpoints.Authorize
-{
-    internal class StubAuthorizeInteractionResponseGenerator : IAuthorizeInteractionResponseGenerator
-    {
-        internal InteractionResponse Response { get; set; } = new InteractionResponse();
+namespace UnitTests.Endpoints.Authorize;
 
-        public Task<InteractionResponse> ProcessInteractionAsync(ValidatedAuthorizeRequest request, ConsentResponse consent = null)
-        {
-            return Task.FromResult(Response);
-        }
+internal class StubAuthorizeInteractionResponseGenerator : IAuthorizeInteractionResponseGenerator
+{
+    internal InteractionResponse Response { get; set; } = new InteractionResponse();
+
+    public Task<InteractionResponse> ProcessInteractionAsync(ValidatedAuthorizeRequest request, ConsentResponse consent = null)
+    {
+        return Task.FromResult(Response);
     }
 }

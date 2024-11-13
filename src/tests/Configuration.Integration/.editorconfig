@@ -1,0 +1,8 @@
+[*.cs]
+
+# Copyright Header
+file_header_template=Copyright (c) Brock Allen & Dominick Baier. All rights reserved.\nLicensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
+dotnet_diagnostic.IDE0073.severity=warning
+
+# Unnecessary Using
+dotnet_diagnostic.IDE0005.severity=warning

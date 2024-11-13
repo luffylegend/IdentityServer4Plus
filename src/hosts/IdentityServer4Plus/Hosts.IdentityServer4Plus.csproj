@@ -1,17 +1,57 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <RootNamespace>IdentityServerHost</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AnalysisMode>all</AnalysisMode>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="All" />
-    <PackageReference Include="System.Security.Principal.Windows" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" />
+
+    <PackageReference Include="Serilog.AspNetCore" />
       
+    <ProjectReference Include="..\..\main\Configuration\IdentityServer4Plus.Configuration.csproj" />
     <ProjectReference Include="..\..\main\IdentityServer4Plus\IdentityServer4Plus.csproj" />
+    <ProjectReference Include="..\..\main\EntityFramework.Configuration\IdentityServer4Plus.EntityFramework.Configuration.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+	<Compile Include="..\Config\Clients.cs">
+		<Link>Configuration\Clients.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\ClientsConsole.cs">
+		<Link>Configuration\ClientsConsole.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\ClientsWeb.cs">
+		<Link>Configuration\ClientsWeb.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\Resources.cs">
+		<Link>Configuration\Resources.cs</Link>
+	</Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Pages\ServerSideSessions\Index.cshtml">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
