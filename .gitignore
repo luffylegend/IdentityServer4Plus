@@ -11,6 +11,7 @@
 *.userprefs
 
 # Build results
+[Aa]rtifacts
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
@@ -64,6 +65,7 @@ dlldata.c
 *.pidb
 *.svclog
 *.scc
+*.py
 
 # Chutzpah Test files
 _Chutzpah*
