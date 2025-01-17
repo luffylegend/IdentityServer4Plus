@@ -56,15 +56,16 @@
         <PackageReference Update="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(ExtensionsVersion)" />
 
         <!--misc -->
+        <PackageReference Update="AutoMapper" Version="[13.0.1,14.0)" />
         <PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Update="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="$(WilsonVersion)" />
-        <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
-        <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
-        <PackageReference Update="AutoMapper" Version="[13.0.1,14.0)" />
         <PackageReference Update="Serilog" Version="4.2.0" />
         <PackageReference Update="Serilog.AspNetCore" Version="9.0.0"/>
         <PackageReference Update="Serilog.Sinks.Console" Version="6.0.0" />
         <PackageReference Update="Serilog.Sinks.File" Version="6.0.0" />
+        <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
+        <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
+        <PackageReference Update="System.Test.Json" Version="8.0.5" />
 
         <!--microsoft asp.net core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(FrameworkVersion)" />
