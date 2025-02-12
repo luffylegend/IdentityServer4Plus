@@ -1,19 +1,19 @@
 <Project>
 
     <PropertyGroup>
-        <FrameworkVersion>8.0.12</FrameworkVersion>
-        <ExtensionsVersion>8.0.12</ExtensionsVersion>
-        <EntityFrameworkVersion>8.0.12</EntityFrameworkVersion>
-        <WilsonVersion>8.3.0</WilsonVersion>
+        <FrameworkVersion>8.0.13</FrameworkVersion>
+        <ExtensionsVersion>8.0.13</ExtensionsVersion>
+        <EntityFrameworkVersion>8.0.13</EntityFrameworkVersion>
+        <WilsonVersion>8.4.0</WilsonVersion>
 
-        <IdentityServerVersion>8.0.12-*</IdentityServerVersion>
+        <IdentityServerVersion>8.0.13-*</IdentityServerVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0'">
         <FrameworkVersion>9.0.0</FrameworkVersion>
         <ExtensionsVersion>9.0.0</ExtensionsVersion>
         <EntityFrameworkVersion>9.0.0</EntityFrameworkVersion>
-        <WilsonVersion>8.3.0</WilsonVersion>
+        <WilsonVersion>8.4.0</WilsonVersion>
         <SqlClientVersion>5.2.1</SqlClientVersion>
     </PropertyGroup>
 
@@ -25,11 +25,11 @@
         <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 
         <!--tests -->
-        <PackageReference Update="FluentAssertions" Version="8.0.0" />
-        <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+        <PackageReference Update="FluentAssertions" Version="8.0.1" />
+        <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.13.0" />
         <!--Since version v2.9.1, xunit no longer supports the SelectMany method.-->
         <PackageReference Update="xunit" Version="2.9.0" />
-        <PackageReference Update="xunit.runner.visualstudio" Version="3.0.1" PrivateAssets="All" />
+        <PackageReference Update="xunit.runner.visualstudio" Version="3.0.2" PrivateAssets="All" />
 
         <!-- testing -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(FrameworkVersion)" />
