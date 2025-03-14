@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace IdentityServer4.Stores.Serialization
 {
@@ -12,16 +12,21 @@ namespace IdentityServer4.Stores.Serialization
     /// <seealso cref="IdentityServer4.Stores.Serialization.IPersistentGrantSerializer" />
     public class PersistentGrantSerializer : IPersistentGrantSerializer
     {
-        private static readonly JsonSerializerSettings _settings;
+        private static readonly JsonSerializerOptions SETTINGS;
 
         static PersistentGrantSerializer()
         {
-            _settings = new JsonSerializerSettings
+            SETTINGS = new JsonSerializerOptions
             {
-                ContractResolver = new CustomContractResolver()
+                // Configure the serializer options
+                PropertyNameCaseInsensitive = true,
+                IgnoreReadOnlyProperties = true,
+                Converters =
+                {
+                    new ClaimConverter(),          // Custom converter for Claim
+                    new ClaimsPrincipalConverter() // Custom converter for ClaimsPrincipal
+                }
             };
-            _settings.Converters.Add(new ClaimConverter());
-            _settings.Converters.Add(new ClaimsPrincipalConverter());
         }
 
         /// <summary>
@@ -32,7 +37,7 @@ namespace IdentityServer4.Stores.Serialization
         /// <returns></returns>
         public string Serialize<T>(T value)
         {
-            return JsonConvert.SerializeObject(value, _settings);
+            return JsonSerializer.Serialize(value, SETTINGS);
         }
 
         /// <summary>
@@ -43,7 +48,7 @@ namespace IdentityServer4.Stores.Serialization
         /// <returns></returns>
         public T Deserialize<T>(string json)
         {
-            return JsonConvert.DeserializeObject<T>(json, _settings);
+            return JsonSerializer.Deserialize<T>(json, SETTINGS);
         }
     }
 }

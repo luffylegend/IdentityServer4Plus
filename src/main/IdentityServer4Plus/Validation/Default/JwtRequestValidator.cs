@@ -9,12 +9,11 @@ using IdentityServer4.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace IdentityServer4.Validation
@@ -199,22 +198,24 @@ namespace IdentityServer4.Validation
                 if (!Constants.Filters.JwtRequestClaimTypesFilter.Contains(key))
                 {
                     var value = token.Payload[key];
-
-                    switch (value)
+                    string stringValue;
+                    if (value is JsonElement jsonElement)
                     {
-                        case string s:
-                            payload.Add(key, s);
-                            break;
-                        case JObject jobj:
-                            payload.Add(key, jobj.ToString(Formatting.None));
-                            break;
-                        case JArray jarr:
-                            payload.Add(key, jarr.ToString(Formatting.None));
-                            break;
-                        case Object obj:
-                            payload.Add(key, obj.ToString());
-                            break;
+                        // Handle JSON object or array
+                        stringValue = JsonSerializer.Serialize(jsonElement);
                     }
+                    else if (value is string s)
+                    {
+                        // Handle plain string
+                        stringValue = s;
+                    }
+                    else
+                    {
+                        // Handle other types (e.g., numbers, booleans)
+                        stringValue = value.ToString();
+                    }
+
+                    payload.Add(key, stringValue);
                 }
             }
 

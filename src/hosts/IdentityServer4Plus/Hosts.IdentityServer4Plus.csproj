@@ -7,8 +7,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Console" />
@@ -17,4 +20,20 @@
       
     <ProjectReference Include="..\..\main\IdentityServer4Plus\IdentityServer4Plus.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+	<Compile Include="..\Config\Clients.cs">
+		<Link>Configuration\Clients.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\ClientsConsole.cs">
+		<Link>Configuration\ClientsConsole.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\ClientsWeb.cs">
+		<Link>Configuration\ClientsWeb.cs</Link>
+	</Compile>
+	<Compile Include="..\Config\Resources.cs">
+		<Link>Configuration\Resources.cs</Link>
+	</Compile>
+  </ItemGroup>
+
 </Project>

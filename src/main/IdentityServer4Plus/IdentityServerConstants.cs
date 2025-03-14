@@ -51,6 +51,7 @@ namespace IdentityServer4
         {
             public const string IdentityToken = "id_token";
             public const string AccessToken = "access_token";
+            public const string LogoutToken = "logout_token";
         }
 
         public static class ClaimValueTypes

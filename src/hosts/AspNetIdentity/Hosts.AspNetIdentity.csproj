@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,9 +14,24 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
-    <PackageReference Include="System.Security.Principal.Windows" />
-    
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
+
     <ProjectReference Include="..\..\main\AspNetIdentity\IdentityServer4Plus.AspNetIdentity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Config\Clients.cs">
+      <Link>Configuration\Clients.cs</Link>
+    </Compile>
+    <Compile Include="..\Config\ClientsConsole.cs">
+      <Link>Configuration\ClientsConsole.cs</Link>
+    </Compile>
+    <Compile Include="..\Config\ClientsWeb.cs">
+      <Link>Configuration\ClientsWeb.cs</Link>
+    </Compile>
+    <Compile Include="..\Config\Resources.cs">
+      <Link>Configuration\Resources.cs</Link>
+    </Compile>
   </ItemGroup>
 
 </Project>
