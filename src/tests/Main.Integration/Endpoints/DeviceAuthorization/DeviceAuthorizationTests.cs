@@ -2,13 +2,13 @@ using FluentAssertions;
 using IdentityModel;
 using IdentityServer.IntegrationTests.Common;
 using IdentityServer4.Models;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -47,7 +47,7 @@ namespace IdentityServer.IntegrationTests.Endpoints.DeviceAuthorization
             var resultDto = ParseJsonBody<ErrorResultDto>(await response.Content.ReadAsStreamAsync());
 
             resultDto.Should().NotBeNull();
-            resultDto.Error.Should().Be(OidcConstants.TokenErrors.InvalidRequest);
+            resultDto.error.Should().Be(OidcConstants.TokenErrors.InvalidRequest);
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace IdentityServer.IntegrationTests.Endpoints.DeviceAuthorization
             var resultDto = ParseJsonBody<ErrorResultDto>(await response.Content.ReadAsStreamAsync());
 
             resultDto.Should().NotBeNull();
-            resultDto.Error.Should().Be(OidcConstants.TokenErrors.InvalidRequest);
+            resultDto.error.Should().Be(OidcConstants.TokenErrors.InvalidRequest);
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace IdentityServer.IntegrationTests.Endpoints.DeviceAuthorization
             var resultDto = ParseJsonBody<ErrorResultDto>(await response.Content.ReadAsStreamAsync());
 
             resultDto.Should().NotBeNull();
-            resultDto.Error.Should().Be(OidcConstants.TokenErrors.InvalidClient);
+            resultDto.error.Should().Be(OidcConstants.TokenErrors.InvalidClient);
         }
 
         [Fact]
@@ -99,7 +99,7 @@ namespace IdentityServer.IntegrationTests.Endpoints.DeviceAuthorization
             var resultDto = ParseJsonBody<ErrorResultDto>(await response.Content.ReadAsStreamAsync());
 
             resultDto.Should().NotBeNull();
-            resultDto.Error.Should().Be(OidcConstants.TokenErrors.InvalidClient);
+            resultDto.error.Should().Be(OidcConstants.TokenErrors.InvalidClient);
         }
 
         [Fact]
@@ -135,7 +135,7 @@ namespace IdentityServer.IntegrationTests.Endpoints.DeviceAuthorization
             using (var reader = new StreamReader(streamBody))
             {
                 var jsonString = reader.ReadToEnd();
-                return JsonConvert.DeserializeObject<T>(jsonString);
+                return JsonSerializer.Deserialize<T>(jsonString);
             }
         }
 
@@ -153,8 +153,8 @@ namespace IdentityServer.IntegrationTests.Endpoints.DeviceAuthorization
 
         internal class ErrorResultDto
         {
-            public string Error { get; set; }
-            public string ErrorDescription { get; set; }
+            public string error { get; set; }
+            public string error_description { get; set; }
         }
     }
 }

@@ -1,40 +1,35 @@
 <Project>
-    <PropertyGroup>
-        <Authors>Luffy Quan</Authors>
-        <Product>IdentityServerPlus</Product>
+  <PropertyGroup>
+    <Authors>Luffy Quan</Authors>
+    <Product>IdentityServerPlus</Product>
 
-        <!--<DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
-        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>-->
+    <!--<DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>-->
 
-        <PackageTags>OAuth2;OAuth 2.0;OpenID Connect;Security;Identity;IdentityServer;IdentityServerPlus;ASP.NET Core</PackageTags>
-        <PackageIcon>icon.jpg</PackageIcon>
-        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/luffylegend/IdentityServer4plus</PackageProjectUrl>
-        <PackageReleaseNotes>https://github.com/luffylegend/IdentityServer4plus/releases</PackageReleaseNotes>
-        <Copyright>$(Authors)</Copyright>
-        
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <DebugType Condition="'$(GITHUB_ACTIONS)' == 'true'">embedded</DebugType>
-        
-        <!-- strong naming fml -->
-        <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
-        <SignAssembly>true</SignAssembly>
-        <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
-    </PropertyGroup>
+    <PackageTags>OAuth2;OAuth 2.0;OpenID Connect;Security;Identity;IdentityServer;IdentityServerPlus;ASP.NET Core</PackageTags>
+    <PackageIcon>icon.jpg</PackageIcon>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/luffylegend/IdentityServer4plus</PackageProjectUrl>
+    <PackageReleaseNotes>https://github.com/luffylegend/IdentityServer4plus/releases</PackageReleaseNotes>
+    <Copyright>$(Authors)</Copyright>
+    
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType Condition="'$(GITHUB_ACTIONS)' == 'true'">embedded</DebugType>
+  </PropertyGroup>
 
-    <PropertyGroup>
-        <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
-        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">True</ContinuousIntegrationBuild>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">True</ContinuousIntegrationBuild>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <None Include="../../../LICENSE" Pack="true" Visible="false" PackagePath="" />
-        <None Include="../../../icon.jpg" Pack="true" Visible="false" PackagePath="/" />
-    </ItemGroup>
+  <ItemGroup>
+    <None Include="../../../LICENSE" Pack="true" Visible="false" PackagePath="" />
+    <None Include="../../../icon.jpg" Pack="true" Visible="false" PackagePath="/" />
+  </ItemGroup>
 
-    <PropertyGroup>
-        <MinVerAutoIncrement>minor</MinVerAutoIncrement>
-        <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-    </PropertyGroup>
+  <PropertyGroup>
+    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
 </Project>

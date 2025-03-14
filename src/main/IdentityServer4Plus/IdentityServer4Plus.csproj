@@ -12,6 +12,7 @@
     <!-- strong naming fml -->
     <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -31,7 +32,6 @@
   <ItemGroup>
     <PackageReference Include="IdentityServer4Plus.Storage" />
     <PackageReference Include="IdentityModel" />
-    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />

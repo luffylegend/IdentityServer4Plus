@@ -1,15 +1,15 @@
 // Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.using System.Collections.Generic;
 
-using System.Collections.Generic;
 using IdentityServer4;
 using IdentityServer4.Models;
+using System.Collections.Generic;
 
 namespace IdentityServerHost.Configuration
 {
     public static class ClientsWeb
     {
-        static string[] allowedScopes = 
+        static string[] _allowedScopes = 
         {
             IdentityServerConstants.StandardScopes.OpenId,
             IdentityServerConstants.StandardScopes.Profile,
@@ -46,7 +46,7 @@ namespace IdentityServerHost.Configuration
                     PostLogoutRedirectUris = { "https://localhost:44300/index.html" },
                     AllowedCorsOrigins = { "https://localhost:44300" },
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 },
                 
                 ///////////////////////////////////////////
@@ -72,7 +72,7 @@ namespace IdentityServerHost.Configuration
 
                     AllowOfflineAccess = true,
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 },
                 
                 ///////////////////////////////////////////
@@ -98,7 +98,7 @@ namespace IdentityServerHost.Configuration
 
                     AllowOfflineAccess = true,
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 },
                 
                 ///////////////////////////////////////////
@@ -124,7 +124,7 @@ namespace IdentityServerHost.Configuration
 
                     AllowOfflineAccess = true,
 
-                    AllowedScopes = allowedScopes
+                    AllowedScopes = _allowedScopes
                 }
             };
         }

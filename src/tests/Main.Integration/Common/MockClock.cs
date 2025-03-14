@@ -1,7 +1,7 @@
 using IdentityServer4;
 using System;
 
-namespace IntegrationTests.Common
+namespace IdentityServer.IntegrationTests.Common
 {
     class MockClock : IClock
     {

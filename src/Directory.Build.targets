@@ -1,19 +1,19 @@
 <Project>
 
     <PropertyGroup>
-        <FrameworkVersion>8.0.13</FrameworkVersion>
-        <ExtensionsVersion>8.0.13</ExtensionsVersion>
-        <EntityFrameworkVersion>8.0.13</EntityFrameworkVersion>
-        <WilsonVersion>8.4.0</WilsonVersion>
+        <FrameworkVersion>8.0.14</FrameworkVersion>
+        <ExtensionsVersion>8.0.14</ExtensionsVersion>
+        <EntityFrameworkVersion>8.0.14</EntityFrameworkVersion>
+        <WilsonVersion>8.6.1</WilsonVersion>
 
-        <IdentityServerVersion>8.0.13-*</IdentityServerVersion>
+        <IdentityServerVersion>8.0.14-*</IdentityServerVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0'">
         <FrameworkVersion>9.0.0</FrameworkVersion>
         <ExtensionsVersion>9.0.0</ExtensionsVersion>
         <EntityFrameworkVersion>9.0.0</EntityFrameworkVersion>
-        <WilsonVersion>8.4.0</WilsonVersion>
+        <WilsonVersion>8.6.1</WilsonVersion>
         <SqlClientVersion>5.2.1</SqlClientVersion>
     </PropertyGroup>
 
@@ -25,13 +25,14 @@
         <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 
         <!--tests -->
-        <PackageReference Update="FluentAssertions" Version="8.0.1" />
+        <PackageReference Update="FluentAssertions" Version="8.1.1" />
         <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.13.0" />
         <!--Since version v2.9.1, xunit no longer supports the SelectMany method.-->
         <PackageReference Update="xunit" Version="2.9.0" />
         <PackageReference Update="xunit.runner.visualstudio" Version="3.0.2" PrivateAssets="All" />
 
         <!-- testing -->
+        <PackageReference Update="AngleSharp" Version="1.2.0" />
         <PackageReference Update="Microsoft.AspNetCore.Authentication.JwtBearer" Version="$(FrameworkVersion)" />
 
         <!--our stuff -->
@@ -44,21 +45,22 @@
         <PackageReference Update="IdentityServer4Plus.EntityFramework" Version="$(IdentityServerVersion)" />
 
         <!--microsoft extensions -->
-        <PackageReference Update="Microsoft.Extensions.Caching.Abstractions" Version="$(ExtensionsVersion)" />
+        <PackageReference Update="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
         <PackageReference Update="Microsoft.Extensions.Caching.Memory" Version="$(ExtensionsVersion)" />
-        <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(ExtensionsVersion)" />
-        <PackageReference Update="Microsoft.Extensions.Http" Version="$(ExtensionsVersion)" />
+        <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2" />
+        <PackageReference Update="Microsoft.Extensions.Http" Version="9.0.2" />
         <PackageReference Update="Microsoft.Extensions.Http.Polly" Version="$(ExtensionsVersion)" />
         <PackageReference Update="Microsoft.Extensions.Logging" Version="$(ExtensionsVersion)" />
-        <PackageReference Update="Microsoft.Extensions.Logging.Abstractions" Version="$(ExtensionsVersion)" />
+        <PackageReference Update="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
         <PackageReference Update="Microsoft.Extensions.Logging.Console" Version="$(ExtensionsVersion)" />
-        <PackageReference Update="Microsoft.Extensions.Options" Version="$(ExtensionsVersion)" />
-        <PackageReference Update="Microsoft.Extensions.Options.ConfigurationExtensions" Version="$(ExtensionsVersion)" />
+        <PackageReference Update="Microsoft.Extensions.Options" Version="9.0.2" />
+        <PackageReference Update="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
 
         <!--misc -->
-        <PackageReference Update="AutoMapper" Version="[13.0.1,14.0)" />
-        <PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Update="AutoMapper" Version="[13.0.1,15.0)" />
+        <PackageReference Update="Microsoft.IdentityModel.JsonWebTokens" Version="$(WilsonVersion)"/>
         <PackageReference Update="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="$(WilsonVersion)" />
+        <PackageReference Update="System.Text.Json" Version="8.0.5" />
         <PackageReference Update="Serilog" Version="4.2.0" />
         <PackageReference Update="Serilog.AspNetCore" Version="9.0.0"/>
         <PackageReference Update="Serilog.Sinks.Console" Version="6.0.0" />
@@ -68,19 +70,25 @@
         <PackageReference Update="System.Test.Json" Version="8.0.5" />
 
         <!--microsoft asp.net core -->
+        <PackageReference Update="Microsoft.AspNetCore.Authentication.Certificate" Version="$(FrameworkVersion)"/>
         <PackageReference Update="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="$(FrameworkVersion)" />
+        <PackageReference Update="Microsoft.AspNetCore.DataProtection.Abstractions" Version="$(FrameworkVersion)"/>
         <PackageReference Update="Microsoft.AspNetCore.TestHost" Version="$(FrameworkVersion)" />
         <PackageReference Update="Microsoft.AspNetCore.Identity" Version="$(FrameworkVersion)" />
         <PackageReference Update="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="$(FrameworkVersion)" />
         <PackageReference Update="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="$(FrameworkVersion)" />
-        <PackageReference Update="Microsoft.AspNetCore.Authentication.Certificate" Version="$(FrameworkVersion)"/>
+        <PackageReference Update="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="$(FrameworkVersion)"/>
 
         <!--microsoft entity framework -->
+        <PackageReference Update="Microsoft.EntityFrameworkCore.Design" Version="$(EntityFrameworkVersion)" PrivateAssets="All" />
+        <PackageReference Update="Microsoft.EntityFrameworkCore.InMemory" Version="$(EntityFrameworkVersion)" />
         <PackageReference Update="Microsoft.EntityFrameworkCore.Relational" Version="$(EntityFrameworkVersion)" />
         <PackageReference Update="Microsoft.EntityFrameworkCore.Sqlite" Version="$(EntityFrameworkVersion)" />
-        <PackageReference Update="Microsoft.EntityFrameworkCore.InMemory" Version="$(EntityFrameworkVersion)" />
         <PackageReference Update="Microsoft.EntityFrameworkCore.SqlServer" Version="$(EntityFrameworkVersion)" />
-        <PackageReference Update="Microsoft.EntityFrameworkCore.Design" Version="$(EntityFrameworkVersion)" PrivateAssets="All" />
+        
+        <!-- Transitive Dependencies -->
+        <PackageReference Update="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
+        <PackageReference Update="System.Drawing.Common" Version="$(EntityFrameworkVersion)" />
 
     </ItemGroup>
 
