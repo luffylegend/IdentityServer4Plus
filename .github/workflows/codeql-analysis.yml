@@ -37,13 +37,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    #- name: Setup dotnet
-    #  uses: actions/setup-dotnet@v4
-    #  with:
-    #    dotnet-version: |
-    #        8.0.x
-    #  
-    #- run: dotnet --info
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          8.0.x
+     
+    - run: dotnet --info
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
