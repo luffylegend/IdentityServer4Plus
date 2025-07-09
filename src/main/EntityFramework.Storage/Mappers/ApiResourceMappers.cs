@@ -1,9 +1,10 @@
-﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
+// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
 using AutoMapper;
 using IdentityServer4.EntityFramework.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IdentityServer4.EntityFramework.Mappers
 {
@@ -14,7 +15,7 @@ namespace IdentityServer4.EntityFramework.Mappers
     {
         static ApiResourceMappers()
         {
-            Mapper = new MapperConfiguration(cfg => cfg.AddProfile<ApiResourceMapperProfile>())
+            Mapper = new MapperConfiguration(cfg => cfg.AddProfile<ApiResourceMapperProfile>(), new NullLoggerFactory())
                 .CreateMapper();
         }
 

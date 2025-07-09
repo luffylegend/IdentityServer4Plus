@@ -1,12 +1,12 @@
 <Project>
 
     <PropertyGroup>
-        <FrameworkVersion>8.0.17</FrameworkVersion>
-        <ExtensionsVersion>8.0.17</ExtensionsVersion>
-        <EntityFrameworkVersion>8.0.17</EntityFrameworkVersion>
-        <WilsonVersion>8.12.0</WilsonVersion>
+        <FrameworkVersion>8.0.18</FrameworkVersion>
+        <ExtensionsVersion>8.0.18</ExtensionsVersion>
+        <EntityFrameworkVersion>8.0.18</EntityFrameworkVersion>
+        <WilsonVersion>8.12.1</WilsonVersion>
 
-        <IdentityServerVersion>8.0.17-*</IdentityServerVersion>
+        <IdentityServerVersion>8.0.18-*</IdentityServerVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0'">
@@ -25,10 +25,10 @@
         <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 
         <!--tests -->
-        <PackageReference Update="FluentAssertions" Version="8.3.0" />
+        <PackageReference Update="FluentAssertions" Version="8.4.0" />
         <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.14.1" />
         <!--Since version v2.9.1, xunit no longer supports the SelectMany method.-->
-        <PackageReference Update="xunit" Version="2.9.0" />
+        <PackageReference Update="xunit" Version="2.9.3" />
         <PackageReference Update="xunit.runner.visualstudio" Version="3.1.1" PrivateAssets="All" />
 
         <!-- testing -->
@@ -57,7 +57,7 @@
         <PackageReference Update="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
 
         <!--misc -->
-        <PackageReference Update="AutoMapper" Version="[14.0.0, )" />
+        <PackageReference Update="AutoMapper" Version="[15.0.0, )" />
         <PackageReference Update="Microsoft.IdentityModel.JsonWebTokens" Version="$(WilsonVersion)"/>
         <PackageReference Update="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="$(WilsonVersion)" />
         <PackageReference Update="Serilog" Version="4.3.0" />
@@ -66,7 +66,7 @@
         <PackageReference Update="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
         <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
-        <PackageReference Update="System.Text.Json" Version="9.0.6" />
+        <PackageReference Update="System.Text.Json" Version="9.0.7" />
 
         <!--microsoft asp.net core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.Certificate" Version="$(FrameworkVersion)"/>
