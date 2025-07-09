@@ -4,6 +4,7 @@
 
 using AutoMapper;
 using IdentityServer4.EntityFramework.Entities;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IdentityServer4.EntityFramework.Mappers
 {
@@ -14,7 +15,7 @@ namespace IdentityServer4.EntityFramework.Mappers
     {
         static IdentityResourceMappers()
         {
-            Mapper = new MapperConfiguration(cfg => cfg.AddProfile<IdentityResourceMapperProfile>())
+            Mapper = new MapperConfiguration(cfg => cfg.AddProfile<IdentityResourceMapperProfile>(), new NullLoggerFactory())
                 .CreateMapper();
         }
 
