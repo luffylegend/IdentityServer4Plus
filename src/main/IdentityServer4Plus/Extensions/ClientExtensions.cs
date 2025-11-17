@@ -38,7 +38,7 @@ namespace IdentityServer4.Models
             var keys = new List<SecurityKey>();
 
             var certificates = GetCertificates(secretList)
-                                .Select(c => (SecurityKey)new X509SecurityKey(c))
+                                .Select(c => (SecurityKey) new X509SecurityKey(c))
                                 .ToList();
             keys.AddRange(certificates);
 
@@ -55,9 +55,39 @@ namespace IdentityServer4.Models
         {
             return secrets
                 .Where(s => s.Type == IdentityServerConstants.SecretTypes.X509CertificateBase64)
-                .Select(s => new X509Certificate2(Convert.FromBase64String(s.Value)))
+                .Select(s => LoadCertificateFromBase64(s.Value))
                 .Where(c => c != null)
                 .ToList();
+        }
+
+        private static X509Certificate2 LoadCertificateFromBase64(string base64String)
+        {
+            X509Certificate2 cert = null;
+
+#if NET9_0_OR_GREATER
+            // In Directly using the new API in NET 9.0+
+             cert = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(base64String));
+#else
+            // In Reflection is used in NET 8.0 and below versions
+            var loaderType = Type.GetType("System.Security.Cryptography.X509Certificates.X509CertificateLoader, System.Security.Cryptography");
+            if (loaderType != null)
+            {
+                var method = loaderType.GetMethod("LoadFromBase64String", new[] { typeof(string), typeof(X509KeyStorageFlags) });
+                if (method != null)
+                {
+                    cert = (X509Certificate2) method.Invoke(null, new object[] { base64String, X509KeyStorageFlags.DefaultKeySet });
+                    if (cert != null)
+                        return cert;
+                }
+            }
+
+            // If the reflection fails, revert back to the old method
+#pragma warning disable SYSLIB0057 // Type or member is obsolete
+            cert = new X509Certificate2(Convert.FromBase64String(base64String));
+#pragma warning restore SYSLIB0057 // Type or member is obsolete
+#endif
+
+            return cert;
         }
     }
 }

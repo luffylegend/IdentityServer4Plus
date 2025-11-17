@@ -38,7 +38,7 @@ namespace IdentityServerHost
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
-            
+
             // cookie policy to deal with temporary browser incompatibilities
             services.AddSameSiteCookiePolicy();
 
@@ -78,7 +78,7 @@ namespace IdentityServerHost
             //     options.ConfigureDbContext = b => b.UseSqlite(connectionString,
             //         sql => sql.MigrationsAssembly(migrationsAssembly));
             // });
-                
+
 
             services.AddExternalIdentityProviders();
 
@@ -88,9 +88,9 @@ namespace IdentityServerHost
                     options.AllowedCertificateTypes = CertificateTypes.All;
                     options.RevocationMode = X509RevocationMode.NoCheck;
                 });
-            
+
             services.AddCertificateForwardingForNginx();
-            
+
             services.AddLocalApiAuthentication(principal =>
             {
                 principal.Identities.First().AddClaim(new Claim("additional_claim", "additional_value"));
@@ -103,7 +103,7 @@ namespace IdentityServerHost
         {
             // use this for persisted grants store
             // app.InitializePersistedGrantsStore();
-            
+
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -111,7 +111,7 @@ namespace IdentityServerHost
 
             app.UseCertificateForwarding();
             app.UseCookiePolicy();
-            
+
             app.UseSerilogRequestLogging();
 
             app.UseDeveloperExceptionPage();
@@ -131,20 +131,50 @@ namespace IdentityServerHost
 
     public static class BuilderExtensions
     {
+        private static X509Certificate2 LoadCertificateFromFile(string fileName, string password)
+        {
+            X509Certificate2 cert = null;
+
+#if NET9_0_OR_GREATER
+            // In Directly using the new API in NET 9.0+
+             cert = X509CertificateLoader.LoadPkcs12FromFile(fileName, password);
+#else
+            // In Reflection is used in NET 8.0 and below versions
+            var loaderType = Type.GetType("System.Security.Cryptography.X509Certificates.X509CertificateLoader, System.Security.Cryptography");
+            if (loaderType != null)
+            {
+                var method = loaderType.GetMethod("LoadFromFile", new[] { typeof(string), typeof(string) });
+                if (method != null)
+                {
+                    cert = (X509Certificate2) method.Invoke(null, new object[] { fileName, password });
+                    if (cert != null)
+                        return cert;
+                }
+            }
+
+            // If the reflection fails, revert back to the old method
+#pragma warning disable SYSLIB0057 // Type or member is obsolete
+            cert = new X509Certificate2(fileName, password);
+#pragma warning restore SYSLIB0057 // Type or member is obsolete
+#endif
+
+            return cert;
+        }
+
         public static IIdentityServerBuilder AddSigningCredential(this IIdentityServerBuilder builder)
         {
             // create random RS256 key
             //builder.AddDeveloperSigningCredential();
 
             // use an RSA-based certificate with RS256
-            var rsaCert = new X509Certificate2("./keys/identityserver.test.rsa.p12", "changeit");
+            var rsaCert = LoadCertificateFromFile("./keys/identityserver.test.rsa.p12", "changeit");
             builder.AddSigningCredential(rsaCert, "RS256");
 
             // ...and PS256
             builder.AddSigningCredential(rsaCert, "PS256");
 
             // or manually extract ECDSA key from certificate (directly using the certificate is not support by Microsoft right now)
-            var ecCert = new X509Certificate2("./keys/identityserver.test.ecdsa.p12", "changeit");
+            var ecCert = LoadCertificateFromFile("./keys/identityserver.test.ecdsa.p12", "changeit");
             var key = new ECDsaSecurityKey(ecCert.GetECDsaPrivateKey())
             {
                 KeyId = CryptoRandom.CreateUniqueId(16, CryptoRandom.OutputFormat.Hex)
@@ -242,6 +272,31 @@ namespace IdentityServerHost
             return services;
         }
 
+        private static X509Certificate2 LoadCertificateFromBytes(byte[] bytes)
+        {
+            X509Certificate2 cert = null;
+            if (Environment.Version.Major >= 9)
+            {
+                var loaderType = Type.GetType("System.Security.Cryptography.X509Certificates.X509CertificateLoader, System.Security.Cryptography");
+                if (loaderType == null)
+                    return null;
+
+                var method = loaderType.GetMethod("LoadFromBytes", new[] { typeof(byte[]), typeof(string) });
+                if (method != null)
+                {
+                    cert = (X509Certificate2) method.Invoke(null, new object[] { bytes, (string) null });
+                }
+            }
+            else
+            {
+#pragma warning disable SYSLIB0057 // Type or member is obsolete
+                cert = new X509Certificate2(bytes);
+#pragma warning restore SYSLIB0057 // Type or member is obsolete
+            }
+
+            return cert;
+        }
+
         public static void AddCertificateForwardingForNginx(this IServiceCollection services)
         {
             services.AddCertificateForwarding(options =>
@@ -252,10 +307,10 @@ namespace IdentityServerHost
                 {
                     X509Certificate2 clientCertificate = null;
 
-                    if(!string.IsNullOrWhiteSpace(headerValue))
+                    if (!string.IsNullOrWhiteSpace(headerValue))
                     {
                         byte[] bytes = Encoding.UTF8.GetBytes(Uri.UnescapeDataString(headerValue));
-                        clientCertificate = new X509Certificate2(bytes);
+                        clientCertificate = LoadCertificateFromBytes(bytes);
                     }
 
                     return clientCertificate;

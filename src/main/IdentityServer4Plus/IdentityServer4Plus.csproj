@@ -1,11 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <PropertyGroup>
     <PackageId>IdentityServer4Plus</PackageId>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <Description>OpenID Connect and OAuth 2.0 Framework for ASP.NET Core
 (A continuation solution for the no longer maintaining project `identity server 4`)</Description>
-    <AssemblyName>IdentityServer4Plus</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net8.0'">IdentityServer4Plus.net8.0</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net9.0'">IdentityServer4Plus.net9.0</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net10.0'">IdentityServer4Plus.net10.0</AssemblyName>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -17,6 +19,7 @@
 
   <PropertyGroup>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GenerateSingleTargetFrameworkPackage>True</GenerateSingleTargetFrameworkPackage>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

@@ -9,6 +9,7 @@ using IdentityServer.IntegrationTests.Clients.Setup;
 using IdentityServer.IntegrationTests.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -32,11 +33,14 @@ namespace IdentityServer.IntegrationTests.Clients
 
         public ClientAssertionClient()
         {
-            var builder = new WebHostBuilder()
-                .UseStartup<Startup>();
-            var server = new TestServer(builder);
-
-            _client = server.CreateClient();
+            var builder = new HostBuilder()
+                .ConfigureWebHost(webHost =>
+                {
+                    webHost.UseTestServer();
+                    webHost.UseStartup<Startup>();
+                });
+            var host = builder.Start();
+            _client = host.GetTestClient();
         }
 
         [Fact]

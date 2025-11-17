@@ -1,11 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <PackageId>IdentityServer4Plus.AspNetIdentity</PackageId>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <Description>ASP.NET Core Identity Integration for IdentityServer4Plus
 (ASP.NET Core Identity Integration solution for the no longer maintaining project `identity server 4`)</Description>
-    <AssemblyName>IdentityServer4Plus.AspNetIdentity</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net8.0'">IdentityServer4Plus.AspNetIdentity.net8.0</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net9.0'">IdentityServer4Plus.AspNetIdentity.net9.0</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net10.0'">IdentityServer4Plus.AspNetIdentity.net10.0</AssemblyName>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -16,6 +18,7 @@
 
   <PropertyGroup>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GenerateSingleTargetFrameworkPackage>True</GenerateSingleTargetFrameworkPackage>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

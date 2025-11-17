@@ -8,6 +8,7 @@ using IdentityServer.IntegrationTests.Clients.Setup;
 using IdentityServer.IntegrationTests.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Hosting;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
@@ -27,11 +28,14 @@ namespace IdentityServer.IntegrationTests.Clients
             var val = new TestCustomTokenRequestValidator();
             Startup.CustomTokenRequestValidator = val;
 
-            var builder = new WebHostBuilder()
-                .UseStartup<Startup>();
-            var server = new TestServer(builder);
-
-            _client = server.CreateClient();
+            var builder = new HostBuilder()
+                 .ConfigureWebHost(webHost =>
+                 {
+                     webHost.UseTestServer();
+                     webHost.UseStartup<Startup>();
+                 });
+            var host = builder.Start();
+            _client = host.GetTestClient();
         }
 
         [Fact]
