@@ -1,11 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 <PropertyGroup>
     <PackageId>IdentityServer4Plus.EntityFramework</PackageId>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <Description>EntityFramework persistence layer for IdentityServer4Plus
 (EntityFramework persistence layer for IdentityServer4Plus for the no longer maintaining project `identity server 4`)
     </Description>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net8.0'">IdentityServer4Plus.EntityFramework.net8.0</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net9.0'">IdentityServer4Plus.EntityFramework.net9.0</AssemblyName>
+    <AssemblyName Condition="'$(TargetFramework)' == 'net10.0'">IdentityServer4Plus.EntityFramework.net10.0</AssemblyName>
     <AssemblyName>IdentityServer4Plus.EntityFramework</AssemblyName>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -14,9 +17,10 @@
     <AssemblyOriginatorKeyFile>../../../key.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
-
+    
   <PropertyGroup>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GenerateSingleTargetFrameworkPackage>True</GenerateSingleTargetFrameworkPackage>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

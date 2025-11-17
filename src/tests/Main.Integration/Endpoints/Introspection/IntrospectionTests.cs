@@ -8,6 +8,7 @@ using IdentityServer.IntegrationTests.Endpoints.Introspection.Setup;
 using IdentityServer.IntegrationTests.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Hosting;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -30,12 +31,18 @@ namespace IdentityServer.IntegrationTests.Endpoints.Introspection
 
         public IntrospectionTests()
         {
-            var builder = new WebHostBuilder()
-                .UseStartup<Startup>();
-            var server = new TestServer(builder);
+            var hostBuilder = new HostBuilder()
+                .ConfigureWebHost(webHost =>
+                {
+                    webHost
+                        .UseTestServer()
+                        .UseStartup<Startup>();
+                });
 
-            _handler = server.CreateHandler();
-            _client = server.CreateClient();
+            var host = hostBuilder.Start();
+
+            _handler = host.GetTestServer().CreateHandler();
+            _client = host.GetTestClient();
         }
 
         [Fact]

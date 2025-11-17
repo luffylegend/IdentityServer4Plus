@@ -7,6 +7,7 @@ using IdentityModel.Client;
 using IdentityServer.IntegrationTests.Clients.Setup;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Hosting;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
@@ -23,11 +24,14 @@ namespace IdentityServer.IntegrationTests.Clients
 
         public RevocationClient()
         {
-            var builder = new WebHostBuilder()
-                .UseStartup<Startup>();
-            var server = new TestServer(builder);
-
-            _client = server.CreateClient();
+            var builder = new HostBuilder()
+                .ConfigureWebHost(webHost =>
+                {
+                    webHost.UseTestServer();
+                    webHost.UseStartup<Startup>();
+                });
+            var host = builder.Start();
+            _client = host.GetTestClient();
         }
 
         [Fact]

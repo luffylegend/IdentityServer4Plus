@@ -18,6 +18,18 @@
     <DebugType Condition="'$(GITHUB_ACTIONS)' == 'true'">embedded</DebugType>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <MinVerTagPattern>8.*</MinVerTagPattern>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <MinVerTagPattern>9.*</MinVerTagPattern>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <MinVerTagPattern>10.*</MinVerTagPattern>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">True</ContinuousIntegrationBuild>
@@ -29,7 +41,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    <MinVerAutoVersion>True</MinVerAutoVersion>
+    <MinVerFilterByTag>True</MinVerFilterByTag>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 </Project>
