@@ -1,3 +1,3 @@
 @echo off
 
-dotnet run --project src/build -- %*
+dotnet run --project src/build %*

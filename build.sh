@@ -4,4 +4,4 @@ set -euo pipefail
 rm -rf nuget
 mkdir nuget
 
-dotnet run --project src/build -- "$@"
+dotnet run --project src/build "$@"

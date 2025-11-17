@@ -19,6 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         runs-on: [macOS-latest, ubuntu-latest, windows-latest]
+        dotnet-framework: ['net8.0', 'net9.0', 'net10.0']
     name: ${{ matrix.runs-on }}
     runs-on: ${{ matrix.runs-on }}
     steps:
@@ -31,6 +32,8 @@ jobs:
       with:
         dotnet-version: |
           8.0.x
+          9.0.x
+          10.0.x
 
     - run: dotnet --info
   
@@ -41,11 +44,14 @@ jobs:
         chmod +x "./build.sh"
 
     - if: contains(matrix.runs-on, 'macOS') || contains(matrix.runs-on, 'ubuntu')
-      run: ./build.sh
+      name: Build with ${{ matrix.dotnet-framework }}
+      run: ./build.sh --framework ${{ matrix.dotnet-framework }}
     - if: matrix.runs-on == 'windows-latest' && github.ref != 'refs/heads/master' && !contains(github.ref, 'refs/tags/')
-      run: ./build.ps1
+      name: Build with ${{ matrix.dotnet-framework }}
+      run: ./build.ps1 --framework ${{ matrix.dotnet-framework }}
     - if: (matrix.runs-on == 'windows-latest') && (github.ref == 'refs/heads/master' && contains(github.ref, 'refs/tags/'))
-      run: ./build.ps1
+      name: Build with ${{ matrix.dotnet-framework }}
+      run: ./build.ps1 --framework ${{ matrix.dotnet-framework }}
       # env:
       #   SignClientSecret: ${{ secrets.SIGNCLIENT }}
       # run: |
