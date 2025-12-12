@@ -4,7 +4,7 @@
         <FrameworkVersion>8.0.22</FrameworkVersion>
         <ExtensionsVersion>8.0.22</ExtensionsVersion>
         <EntityFrameworkVersion>8.0.22</EntityFrameworkVersion>
-        <WilsonVersion>8.14.0</WilsonVersion>
+        <WilsonVersion>8.15.0</WilsonVersion>
 
         <IdentityServerVersion>8.0.22-*</IdentityServerVersion>
     </PropertyGroup>
@@ -13,20 +13,20 @@
         <FrameworkVersion>9.0.11</FrameworkVersion>
         <ExtensionsVersion>9.0.11</ExtensionsVersion>
         <EntityFrameworkVersion>9.0.11</EntityFrameworkVersion>
-        <WilsonVersion>8.14.0</WilsonVersion>
+        <WilsonVersion>8.15.0</WilsonVersion>
         <SqlClientVersion>5.2.1</SqlClientVersion>
         
         <IdentityServerVersion>9.0.11-*</IdentityServerVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'net10.0'">
-        <FrameworkVersion>10.0.0</FrameworkVersion>
-        <ExtensionsVersion>10.0.0</ExtensionsVersion>
-        <EntityFrameworkVersion>10.0.0</EntityFrameworkVersion>
-        <WilsonVersion>8.14.0</WilsonVersion>
+        <FrameworkVersion>10.0.1</FrameworkVersion>
+        <ExtensionsVersion>10.0.1</ExtensionsVersion>
+        <EntityFrameworkVersion>10.0.1</EntityFrameworkVersion>
+        <WilsonVersion>8.15.0</WilsonVersion>
         <SqlClientVersion>5.2.1</SqlClientVersion>
         
-        <IdentityServerVersion>10.0.0-*</IdentityServerVersion>
+        <IdentityServerVersion>10.0.1-*</IdentityServerVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -69,16 +69,16 @@
         <PackageReference Update="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
 
         <!--misc -->
-        <PackageReference Update="AutoMapper" Version="[15.1.0, )" />
+        <PackageReference Update="AutoMapper" Version="[16.0.0, )" />
         <PackageReference Update="Microsoft.IdentityModel.JsonWebTokens" Version="$(WilsonVersion)"/>
         <PackageReference Update="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="$(WilsonVersion)" />
         <PackageReference Update="Serilog" Version="4.3.0" />
-        <PackageReference Update="Serilog.AspNetCore" Version="9.0.0"/>
+        <PackageReference Update="Serilog.AspNetCore" Version="10.0.0"/>
         <PackageReference Update="Serilog.Sinks.Console" Version="6.1.1" />
         <PackageReference Update="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
         <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
-        <PackageReference Update="System.Text.Json" Version="10.0.0" />
+        <PackageReference Update="System.Text.Json" Version="10.0.1" />
 
         <!--microsoft asp.net core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.Certificate" Version="$(FrameworkVersion)"/>
