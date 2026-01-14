@@ -1,40 +1,40 @@
 <Project>
 
     <PropertyGroup>
-        <FrameworkVersion>8.0.22</FrameworkVersion>
-        <ExtensionsVersion>8.0.22</ExtensionsVersion>
-        <EntityFrameworkVersion>8.0.22</EntityFrameworkVersion>
+        <FrameworkVersion>8.0.23</FrameworkVersion>
+        <ExtensionsVersion>8.0.23</ExtensionsVersion>
+        <EntityFrameworkVersion>8.0.23</EntityFrameworkVersion>
         <WilsonVersion>8.15.0</WilsonVersion>
 
-        <IdentityServerVersion>8.0.22-*</IdentityServerVersion>
+        <IdentityServerVersion>8.0.23-*</IdentityServerVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0'">
-        <FrameworkVersion>9.0.11</FrameworkVersion>
-        <ExtensionsVersion>9.0.11</ExtensionsVersion>
-        <EntityFrameworkVersion>9.0.11</EntityFrameworkVersion>
+        <FrameworkVersion>9.0.12</FrameworkVersion>
+        <ExtensionsVersion>9.0.12</ExtensionsVersion>
+        <EntityFrameworkVersion>9.0.12</EntityFrameworkVersion>
         <WilsonVersion>8.15.0</WilsonVersion>
         <SqlClientVersion>5.2.1</SqlClientVersion>
         
-        <IdentityServerVersion>9.0.11-*</IdentityServerVersion>
+        <IdentityServerVersion>9.0.12-*</IdentityServerVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'net10.0'">
-        <FrameworkVersion>10.0.1</FrameworkVersion>
-        <ExtensionsVersion>10.0.1</ExtensionsVersion>
-        <EntityFrameworkVersion>10.0.1</EntityFrameworkVersion>
+        <FrameworkVersion>10.0.2</FrameworkVersion>
+        <ExtensionsVersion>10.0.2</ExtensionsVersion>
+        <EntityFrameworkVersion>10.0.2</EntityFrameworkVersion>
         <WilsonVersion>8.15.0</WilsonVersion>
         <SqlClientVersion>5.2.1</SqlClientVersion>
         
-        <IdentityServerVersion>10.0.1-*</IdentityServerVersion>
+        <IdentityServerVersion>10.0.2-*</IdentityServerVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <!--build related-->
-        <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
+        <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
         <PackageReference Update="SimpleExec" Version="12.0.0" />
         <PackageReference Update="Bullseye" Version="5.0.0" />
-        <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+        <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.102" PrivateAssets="All" />
 
         <!--tests -->
         <PackageReference Update="FluentAssertions" Version="8.8.0" />
@@ -78,7 +78,7 @@
         <PackageReference Update="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Update="System.IdentityModel.Tokens.Jwt" Version="$(WilsonVersion)" />
         <PackageReference Update="System.Security.Principal.Windows" Version="5.0.0" />
-        <PackageReference Update="System.Text.Json" Version="10.0.1" />
+        <PackageReference Update="System.Text.Json" Version="10.0.2" />
 
         <!--microsoft asp.net core -->
         <PackageReference Update="Microsoft.AspNetCore.Authentication.Certificate" Version="$(FrameworkVersion)"/>
